@@ -1,18 +1,12 @@
 #include <iostream>
 #include "clock.h"
 
-class Clock {
-private:
-    int clock;
+CPUCLOCK::CPUCLOCK() : clock(0) {}
 
-public:
-    Clock() : clock(0) {}
+void CPUCLOCK::increment() {
+    clock++;
+}
 
-    void increment() {
-        clock++;
-    }
-
-    int getClock() const {
-        return clock;
-    }
-};
+int CPUCLOCK::getClock() {
+    return clock;
+}

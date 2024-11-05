@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <utility>
 #include "instruction.h"
+#include "decoder.h"
 #include "ram.h"
 
 class CPU {
@@ -73,6 +74,96 @@ class CPU {
             
         }
 
+        Instruction decode_instr(Instruction instr) {
+            Decoder *dc = new Decoder();
+            dc->assignInstr(instr.instruction);
+            dc->getOpCode();
+            dc->getOps();
+            dc->getFormat();
+            dc->decodeOps();
+            dc->decodeFlags();
+
+            instr.rd = dc->rd;
+            instr.rs1 = dc->rs1;
+            instr.rs2 = dc->rs2;
+            instr.immediate = dc->immediate;
+            instr.format = dc->format;
+            instr.reg_write = dc->reg_write;
+            instr.alu_op = dc->alu_op;
+            instr.alu_src = dc->alu_src;
+            instr.mem_read = dc->mem_read;
+            instr.mem_write = dc->mem_write;
+            instr.write_source = dc->write_source;
+            instr.branch = dc->branch;
+            instr.jump = dc->jump;
+            instr.write_pc_to_reg = dc->write_pc_to_reg;
+            instr.write_reg_to_pc = dc->write_reg_to_pc;
+            instr.instr = dc->instr;
+
+            return instr;
+        }
+
+        Instruction execute_instr(Instruction instr) {
+            std::string op = instr.instr;
+            if(op == "add") {
+                instr.result = rf[instr.rs1] + rf[instr.rs2];
+            } else if(op == "sub") {
+                instr.result = rf[instr.rs1] - rf[instr.rs2];
+            } else if(op == "mul") {
+                instr.result = rf[instr.rs1] * rf[instr.rs2];
+            } else if(op == "div") {
+                instr.result = rf[instr.rs1] / rf[instr.rs2];
+            } else if(op == "sll") {
+                instr.result = rf[instr.rs1] << rf[instr.rs2];
+            } else if(op == "mulh") {
+                instr.result = (int32_t)rf[instr.rs1] * (int32_t)rf[instr.rs2] >> 32;
+            } else if(op == "slt") {
+                instr.result = (int32_t)rf[instr.rs1] < (int32_t)rf[instr.rs2];
+            } else if(op == "mulhsu") {
+                instr.result = (int32_t)rf[instr.rs1] * (uint32_t)rf[instr.rs2] >> 32;
+            } else if(op == "sltu") {
+                instr.result = rf[instr.rs1] < rf[instr.rs2];
+            } else if(op == "mulhu") {
+                instr.result = (uint32_t)rf[instr.rs1] * (uint32_t)rf[instr.rs2] >> 32;
+            } else if(op == "xor") {
+                instr.result = rf[instr.rs1] ^ rf[instr.rs2];
+            } else if(op == "divu") {
+                instr.result = rf[instr.rs1] / rf[instr.rs2];
+            } else if(op == "srl") {
+                instr.result = rf[instr.rs1] >> rf[instr.rs2];
+            } else if(op == "sra") {
+                instr.result = (int32_t)rf[instr.rs1] >> rf[instr.rs2];
+            } else if(op == "or") {
+                instr.result = rf[instr.rs1] | rf[instr.rs2];
+            } else if(op == "rem") {
+                instr.result = rf[instr.rs1] % rf[instr.rs2];
+            } else if(op == "and") {
+                instr.result = rf[instr.rs1] & rf[instr.rs2];
+            } else if(op == "remu") {
+                instr.result = rf[instr.rs1] % rf[instr.rs2];
+            } else if(op == "addi") {
+                instr.result = rf[instr.rs1] + instr.immediate;
+            } else if(op == "subi") {
+                instr.result = rf[instr.rs1] - instr.immediate;
+            } else if(op == "muli") {
+                instr.result = rf[instr.rs1] * instr.immediate;
+            } else if(op == "divi") {
+                instr.result = rf[instr.rs1] / instr.immediate;
+            } else if(op == "slli") {
+                instr.result = rf[instr.rs1] << instr.immediate;
+            } else if(op == "slti") {
+                instr.result = (int32_t)rf[instr.rs1] < instr.immediate;
+            } else if(op == "sltiu") {
+                instr.result = rf[instr.rs1] < instr.immediate;
+            } else if(op == "xori") {
+                instr.result = rf[instr.rs1] ^ instr.immediate;
+            } else if(op == "ori") {
+                instr.result = rf[instr.rs1] | instr.immediate;
+            } else if(op == "andi") {
+                instr.result = rf[instr.rs1] & instr.immediate;
+            }
+            return instr;
+        }
     private: 
         Instruction *fetch;
         Instruction *decode;

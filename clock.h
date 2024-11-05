@@ -1,9 +1,9 @@
 #ifndef CLOCK_H
 #define CLOCK_H
 
-class Clock {
+class CPUCLOCK {
 public:
-    Clock(); // Constructor
+    CPUCLOCK(); // Constructor
     void increment(); // Set the time
     int getClock(); // Get the time
 

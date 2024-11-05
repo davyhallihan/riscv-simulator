@@ -5,9 +5,12 @@
 #include <cstdint>
 #include <limits>
 #include <algorithm>
+#include <bitset>
 #include "ram.h"
+#include "clock.h"
 //#include <cpu.h>
 
+CPUCLOCK *cpuclock = new CPUCLOCK();
 RAM *memory = new RAM();
 // CPU *cpu1 = new CPU();
 // CPU *cpu2 = new CPU();
@@ -50,8 +53,20 @@ int main(int argc, char* argv[]) {
 
     std::vector<int> instructions = instructionsFromFile(filename);
     std::cout << "Found: " << instructions.size() << " instructions" << std::endl;
-    
+
     memory->initialize(instructions);
+
+    //UNIT TEST TO VERIFY INITIALIZATION WORKING PROPERLY
+    // for(int i = 0; i < 4*21; i += 4) {
+    //     uint32_t value = *reinterpret_cast<uint32_t*>(&memory->mem[i]);
+    //     std::cout << std::bitset<32>(value) << " vs " << std::bitset<32>(instructions[i/4]) << std::endl;
+    // }
+    while(true) {
+        memory->cycle();
+        
+        cpuclock->increment();
+        std::cout << cpuclock->getClock() << std::endl;
+    }
     
 
     return 0;
