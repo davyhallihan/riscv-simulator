@@ -39,6 +39,7 @@ class CPU {
                 if(memory->PORT_MEM == std::make_pair(0u,0u) && storing) {
                     store->ready = true;
                     storing = false;
+                    memory->PORT_MEM_OP = false;
                 }
             }
 
@@ -106,6 +107,7 @@ class CPU {
                 if(fetch) { print_instr(*fetch, "FETCH"); }
                 if(decode) { print_instr(*decode, "DECODE"); }
                 if(execute) { print_instr(*execute, "EXECUTE"); }
+                if(store) { print_instr(*store, "STORE"); }
                 std::cout << std::endl << "Press Enter to continue...";
                 std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             } 
@@ -127,7 +129,7 @@ class CPU {
             dc->getOps();
             dc->decodeOps();
             dc->decodeFlags();
-            dc->printFlags();
+            //dc->printFlags();
 
             instr->rd = dc->rd;
             instr->rs1 = dc->rs1;
@@ -190,7 +192,6 @@ class CPU {
             } else if(op == "remu") {
                 instr->result = rf[instr->rs1] % rf[instr->rs2];
             } else if(op == "addi") {
-                std::cout << "failing in addi" << std::endl;
                 instr->result = rf[instr->rs1] + instr->immediate;
             } else if(op == "subi") {
                 instr->result = rf[instr->rs1] - instr->immediate;

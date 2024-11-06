@@ -169,7 +169,7 @@ void Decoder::decodeOps() {
         case 2: //"I":
             instr = func3I[funct3];
             immediate = signExtend12(immediate);
-            std::cout << func3I[funct3] << " x" << rd << ", x" << rs1 << ", " << signExtend12(immediate) << std::endl;
+            //std::cout << func3I[funct3] << " x" << rd << ", x" << rs1 << ", " << signExtend12(immediate) << std::endl;
             break;
         case 3: //"IL":
             instr = func3IL[funct3];
