@@ -15,6 +15,10 @@ class RAM {
         uint32_t MEMSTALL;
         uint32_t INST1STALL;
         uint32_t INST2STALL;
+        bool PORT_MEM_OP;
+        bool PORT_INST1_OP;
+        bool PORT_INST2_OP;
+        int totalTicks;
 
         RAM();
         void initialize(std::vector<int> instructions);

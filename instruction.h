@@ -27,6 +27,7 @@ struct Instruction {
     int jump;
     int write_pc_to_reg;
     int write_reg_to_pc;
+    int change_pc;
 };
 
 #endif

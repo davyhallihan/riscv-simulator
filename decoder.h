@@ -4,6 +4,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <vector>
+#include <cstdint>
 
 class Decoder {
 public:
@@ -20,6 +21,7 @@ public:
     int jump = 0b0; //1 = true
     int write_pc_to_reg = 0b0; //1 = true
     int write_reg_to_pc = 0b0; //1 = true
+    int change_pc = 0b0; //1 = true
     std::string instr;
 
     Decoder();
