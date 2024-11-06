@@ -36,7 +36,7 @@ Decoder::Decoder() {
     formMap = {
         {1, "R"}, {2, "I"}, {3, "I"}, {4, "I"}, 
         {5, "S"}, {6, "S"}, {7, "B"}, {8, "J"}, 
-        {9, "I"}, {10, "U"}, {11, "U"}
+        {9, "I"}, {10, "U"}, {11, "U"},{12, "F"}
     };
 }
 
@@ -112,6 +112,12 @@ void Decoder::getOps() {
         case 11: //"UA":
             rd = (instruction >> 7) & 0b11111;
             immediate = (instruction >> 12) & 0b11111111111111111111;
+        case 12: //"F"
+            rd = (instruction >> 7) & 0b11111; 
+            rs1 = (instruction >> 15) & 0b11111;
+            rs2 = (instruction >> 20) & 0b11111;
+            funct3 = (instruction >> 12) & 0b111; //Rounding mode, ignore ???
+            funct7 = (instruction >> 25) & 0b1111111;  
             break;
 
     }
@@ -155,6 +161,8 @@ void Decoder::getFormat() {
             break;
         case 0b0010111:
             format = 11; //"UA"; //auipc
+        case 0b1010011:
+            format = 12; //"F"; //fadd,fsub
             break;
     }
 }
@@ -215,6 +223,12 @@ void Decoder::decodeOps() {
             instr = "auipc";
             immediate = signExtend20(immediate);
             //std::cout << "auipc x" << rd << ", " << signExtend20(immediate) << std::endl;
+        case 12: //"F" //Fadd, Fsub
+            if (funct7 == 0b0000000){
+                instr = "fadd.s";
+            }else if (funct7 == 0b0000100){
+                instr = "fsub.s";
+            }
             break;
     }
 }
@@ -274,6 +288,9 @@ void Decoder::decodeFlags() {
             reg_write = 0b1;
             alu_op = 0b10;
             alu_src = 0b01;
+        case 12: //"F": //Fadd.s Fsub.s
+            reg_write = 0b1;
+            alu_op = 0b10;
             break;
     }
 }
