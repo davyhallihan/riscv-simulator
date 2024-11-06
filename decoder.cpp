@@ -140,12 +140,15 @@ void Decoder::getFormat() {
             break;
         case 0b1100011:
             format = 7; //"B";
+            change_pc = 0b1;
             break;
         case 0b1101111:
             format = 8; //"JL"; //jal
+            change_pc = 0b1;
             break;
         case 0b1100111:
             format = 9; //"IR"; //jalr
+            change_pc = 0b1;
             break;
         case 0b0110111:
             format = 10; //"UL"; //lui

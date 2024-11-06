@@ -40,67 +40,123 @@ class CPU {
                     storing = false;
                 }
             }
-            if(store->ready) { store = nullptr; } 
+            if(store != nullptr) { if(store->ready) { store = nullptr; } }
 
             if(execute != nullptr && cpuTick) {
                 //execute logic here
             }
-            if(execute->ready && store == nullptr) { store = execute; store->ready = false; execute = nullptr; }
+            if(execute != nullptr) { if(execute->ready && store == nullptr) { store = execute; store->ready = false; execute = nullptr; } }
             
+
+            if(decode != nullptr) { if(decode->ready && execute == nullptr) { execute = decode; execute->ready = false; decode = nullptr; } }
+
             //we can attempt to decode the instruction if there is one in decode
             if(decode != nullptr && cpuTick) {
-                //decode logic here
+                decode_instr(decode);
             }
-            if(decode->ready && execute == nullptr) { execute = decode; execute->ready = false; decode = nullptr; }
+            
+
+            //by the time the read has completed, we can move to decoding assuming it's empty
+            if(fetch) {
+                if(fetch->ready && decode == nullptr) { decode = fetch; decode->ready = false; fetch = nullptr; }
+            }
+            
 
             //if fetch is empty, we can get next instruction
             if(fetch == nullptr) {
-                if(memory->PORT_INST1 == std::make_pair(0u, 0u)) {
-                    memory->PORT_INST1 = std::make_pair(PC, 0u);
-                }
+                //std::cout << "Fetch is null" << std::endl;
+                bool changePC = false;
+                bool changePCNow = false;
+                if(decode != nullptr) { if(decode->change_pc == 1) { changePC = true; }}
+                if(execute != nullptr) { if(execute->change_pc == 1) { changePC = true; }}
+                if(store != nullptr) { if(store->change_pc == 1) { changePCNow = true; changePC = true; }}
+
+                if(!changePC && cpuTick) {
+                    //std::cout << "Not changing PC on CPU tick" << std::endl;
+                    //std::cout << "MEMORY PORTINST1 PAIR IS " << memory->PORT_INST1.first << " " << memory->PORT_INST1.second << std::endl;
+                    if(memory->PORT_INST1.first == static_cast<uint32_t>(0) && memory->PORT_INST1.second == static_cast<uint32_t>(0)) {
+                        memory->PORT_INST1 = std::make_pair(PC + 4, 0u);
+                    }
+                    
+                    if(memory->PORT_INST1.second != 0) {
+                        if(cpuTick) {
+                            fetch = new Instruction();
+                            fetch->instruction = memory->PORT_INST1.second;
+                            fetch->ready = true;
+                            incrementPC();
+                            memory->PORT_INST1 = std::make_pair(0u, 0u);
+                            memory->PORT_INST1_OP = false;
+                            print_instr(*fetch, "LOADED FETCH");
+                        }
+                    }
+                } 
                 
-                if(memory->PORT_INST1.second != 0) {
-                    if(cpuTick) {
-                        fetch = new Instruction();
-                        fetch->instruction = memory->PORT_INST1.second;
-                        fetch->ready = true;
-                        incrementPC();
+                if(changePCNow && cpuTick) {
+                    PC = store->result;
+                    if(memory->PORT_INST1 == std::make_pair(0u, 0u)) {
+                        memory->PORT_INST1 = std::make_pair(PC + 4, 0u);
+                    }
+                    
+                    if(memory->PORT_INST1.second != 0) {
+                        if(cpuTick) {
+                            fetch = new Instruction();
+                            fetch->instruction = memory->PORT_INST1.second;
+                            fetch->ready = true;
+                            memory->PORT_INST1 = std::make_pair(0u, 0u);
+                            memory->PORT_INST1_OP = false;
+                            incrementPC();
+                        }
                     }
                 }
             }
 
-            //by the time the read has completed, we can move to decoding assuming it's empty
-            if(fetch->ready && decode == nullptr) { decode = fetch; decode->ready = false; fetch = nullptr; }
             
+            //if(cpuTick) { std::cout << "CPU TICK!" << std::endl;}
+            if(cpuTick) { 
+                if(fetch) { print_instr(*fetch, "FETCH"); }
+                if(decode) { print_instr(*decode, "DECODE"); }
+                if(execute) { print_instr(*execute, "EXECUTE"); }
+                std::cout << std::endl << "Press Enter to continue...";
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            } 
         }
 
-        Instruction decode_instr(Instruction instr) {
+        void print_instr(Instruction instr, std::string stage) {
+            if(instr.instr != "") { 
+                std::cout << stage << " " << instr.instr << std::endl;
+                return;
+            }
+            std::cout << stage << " " << instr.instruction << std::endl;
+        }
+
+        void decode_instr(Instruction *instr) {
             Decoder *dc = new Decoder();
-            dc->assignInstr(instr.instruction);
+            dc->assignInstr(instr->instruction);
             dc->getOpCode();
             dc->getOps();
             dc->getFormat();
             dc->decodeOps();
             dc->decodeFlags();
 
-            instr.rd = dc->rd;
-            instr.rs1 = dc->rs1;
-            instr.rs2 = dc->rs2;
-            instr.immediate = dc->immediate;
-            instr.format = dc->format;
-            instr.reg_write = dc->reg_write;
-            instr.alu_op = dc->alu_op;
-            instr.alu_src = dc->alu_src;
-            instr.mem_read = dc->mem_read;
-            instr.mem_write = dc->mem_write;
-            instr.write_source = dc->write_source;
-            instr.branch = dc->branch;
-            instr.jump = dc->jump;
-            instr.write_pc_to_reg = dc->write_pc_to_reg;
-            instr.write_reg_to_pc = dc->write_reg_to_pc;
-            instr.instr = dc->instr;
+            instr->rd = dc->rd;
+            instr->rs1 = dc->rs1;
+            instr->rs2 = dc->rs2;
+            instr->immediate = dc->immediate;
+            instr->format = dc->format;
+            instr->reg_write = dc->reg_write;
+            instr->alu_op = dc->alu_op;
+            instr->alu_src = dc->alu_src;
+            instr->mem_read = dc->mem_read;
+            instr->mem_write = dc->mem_write;
+            instr->write_source = dc->write_source;
+            instr->branch = dc->branch;
+            instr->jump = dc->jump;
+            instr->write_pc_to_reg = dc->write_pc_to_reg;
+            instr->write_reg_to_pc = dc->write_reg_to_pc;
+            instr->instr = dc->instr;
+            instr->change_pc = dc->change_pc;
 
-            return instr;
+            instr->ready = true;
         }
 
         Instruction execute_instr(Instruction instr) {

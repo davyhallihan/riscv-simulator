@@ -8,11 +8,11 @@
 #include <bitset>
 #include "ram.h"
 #include "clock.h"
-//#include <cpu.h>
+#include "cpu.cpp"
 
 CPUCLOCK *cpuclock = new CPUCLOCK();
 RAM *memory = new RAM();
-// CPU *cpu1 = new CPU();
+CPU *cpu1 = new CPU();
 // CPU *cpu2 = new CPU();
 // MEMBUS *bus = new MEMBUS();
 
@@ -55,6 +55,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Found: " << instructions.size() << " instructions" << std::endl;
 
     memory->initialize(instructions);
+    cpu1->initialize(memory);
 
     //UNIT TEST TO VERIFY INITIALIZATION WORKING PROPERLY
     // for(int i = 0; i < 4*21; i += 4) {
@@ -63,9 +64,10 @@ int main(int argc, char* argv[]) {
     // }
     while(true) {
         memory->cycle();
+        cpu1->cycle();
+        cpu1->updateCycles(cpuclock->getClock());
         
         cpuclock->increment();
-        std::cout << cpuclock->getClock() << std::endl;
     }
     
 
