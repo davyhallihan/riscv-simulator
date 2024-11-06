@@ -30,6 +30,7 @@ class CPU {
         }
 
         void cycle() {
+            if(store != nullptr) { if(store->ready) { store = nullptr; } }
             if(store != nullptr && cpuTick) {
                 if(memory->PORT_MEM == std::make_pair(0u, 0u) && !storing) {
                     memory->PORT_MEM = std::make_pair(store->rd, store->result);
@@ -40,29 +41,18 @@ class CPU {
                     storing = false;
                 }
             }
-            if(store != nullptr) { if(store->ready) { store = nullptr; } }
 
-            if(execute != nullptr && cpuTick) {
-                //execute logic here
-            }
             if(execute != nullptr) { if(execute->ready && store == nullptr) { store = execute; store->ready = false; execute = nullptr; } }
+            if(execute != nullptr && cpuTick) {
+                execute_instr(execute);
+            }
             
-
             if(decode != nullptr) { if(decode->ready && execute == nullptr) { execute = decode; execute->ready = false; decode = nullptr; } }
-
-            //we can attempt to decode the instruction if there is one in decode
             if(decode != nullptr && cpuTick) {
                 decode_instr(decode);
             }
             
-
-            //by the time the read has completed, we can move to decoding assuming it's empty
-            if(fetch) {
-                if(fetch->ready && decode == nullptr) { decode = fetch; decode->ready = false; fetch = nullptr; }
-            }
-            
-
-            //if fetch is empty, we can get next instruction
+            if(fetch) { if(fetch->ready && decode == nullptr) { decode = fetch; decode->ready = false; fetch = nullptr; } }
             if(fetch == nullptr) {
                 //std::cout << "Fetch is null" << std::endl;
                 bool changePC = false;
@@ -133,14 +123,16 @@ class CPU {
             Decoder *dc = new Decoder();
             dc->assignInstr(instr->instruction);
             dc->getOpCode();
-            dc->getOps();
             dc->getFormat();
+            dc->getOps();
             dc->decodeOps();
             dc->decodeFlags();
+            dc->printFlags();
 
             instr->rd = dc->rd;
             instr->rs1 = dc->rs1;
             instr->rs2 = dc->rs2;
+            std::cout << "PRINTING IMMEDIATE " << dc->immediate << std::endl;
             instr->immediate = dc->immediate;
             instr->format = dc->format;
             instr->reg_write = dc->reg_write;
@@ -159,66 +151,67 @@ class CPU {
             instr->ready = true;
         }
 
-        Instruction execute_instr(Instruction instr) {
-            std::string op = instr.instr;
+        void execute_instr(Instruction* instr) {
+            std::string op = instr->instr;
             if(op == "add") {
-                instr.result = rf[instr.rs1] + rf[instr.rs2];
+                instr->result = rf[instr->rs1] + rf[instr->rs2];
             } else if(op == "sub") {
-                instr.result = rf[instr.rs1] - rf[instr.rs2];
+                instr->result = rf[instr->rs1] - rf[instr->rs2];
             } else if(op == "mul") {
-                instr.result = rf[instr.rs1] * rf[instr.rs2];
+                instr->result = rf[instr->rs1] * rf[instr->rs2];
             } else if(op == "div") {
-                instr.result = rf[instr.rs1] / rf[instr.rs2];
+                instr->result = rf[instr->rs1] / rf[instr->rs2];
             } else if(op == "sll") {
-                instr.result = rf[instr.rs1] << rf[instr.rs2];
+                instr->result = rf[instr->rs1] << rf[instr->rs2];
             } else if(op == "mulh") {
-                instr.result = (int32_t)rf[instr.rs1] * (int32_t)rf[instr.rs2] >> 32;
+                instr->result = (int32_t)rf[instr->rs1] * (int32_t)rf[instr->rs2] >> 32;
             } else if(op == "slt") {
-                instr.result = (int32_t)rf[instr.rs1] < (int32_t)rf[instr.rs2];
+                instr->result = (int32_t)rf[instr->rs1] < (int32_t)rf[instr->rs2];
             } else if(op == "mulhsu") {
-                instr.result = (int32_t)rf[instr.rs1] * (uint32_t)rf[instr.rs2] >> 32;
+                instr->result = (int32_t)rf[instr->rs1] * (uint32_t)rf[instr->rs2] >> 32;
             } else if(op == "sltu") {
-                instr.result = rf[instr.rs1] < rf[instr.rs2];
+                instr->result = rf[instr->rs1] < rf[instr->rs2];
             } else if(op == "mulhu") {
-                instr.result = (uint32_t)rf[instr.rs1] * (uint32_t)rf[instr.rs2] >> 32;
+                instr->result = (uint32_t)rf[instr->rs1] * (uint32_t)rf[instr->rs2] >> 32;
             } else if(op == "xor") {
-                instr.result = rf[instr.rs1] ^ rf[instr.rs2];
+                instr->result = rf[instr->rs1] ^ rf[instr->rs2];
             } else if(op == "divu") {
-                instr.result = rf[instr.rs1] / rf[instr.rs2];
+                instr->result = rf[instr->rs1] / rf[instr->rs2];
             } else if(op == "srl") {
-                instr.result = rf[instr.rs1] >> rf[instr.rs2];
+                instr->result = rf[instr->rs1] >> rf[instr->rs2];
             } else if(op == "sra") {
-                instr.result = (int32_t)rf[instr.rs1] >> rf[instr.rs2];
+                instr->result = (int32_t)rf[instr->rs1] >> rf[instr->rs2];
             } else if(op == "or") {
-                instr.result = rf[instr.rs1] | rf[instr.rs2];
+                instr->result = rf[instr->rs1] | rf[instr->rs2];
             } else if(op == "rem") {
-                instr.result = rf[instr.rs1] % rf[instr.rs2];
+                instr->result = rf[instr->rs1] % rf[instr->rs2];
             } else if(op == "and") {
-                instr.result = rf[instr.rs1] & rf[instr.rs2];
+                instr->result = rf[instr->rs1] & rf[instr->rs2];
             } else if(op == "remu") {
-                instr.result = rf[instr.rs1] % rf[instr.rs2];
+                instr->result = rf[instr->rs1] % rf[instr->rs2];
             } else if(op == "addi") {
-                instr.result = rf[instr.rs1] + instr.immediate;
+                std::cout << "failing in addi" << std::endl;
+                instr->result = rf[instr->rs1] + instr->immediate;
             } else if(op == "subi") {
-                instr.result = rf[instr.rs1] - instr.immediate;
+                instr->result = rf[instr->rs1] - instr->immediate;
             } else if(op == "muli") {
-                instr.result = rf[instr.rs1] * instr.immediate;
+                instr->result = rf[instr->rs1] * instr->immediate;
             } else if(op == "divi") {
-                instr.result = rf[instr.rs1] / instr.immediate;
+                instr->result = rf[instr->rs1] / instr->immediate;
             } else if(op == "slli") {
-                instr.result = rf[instr.rs1] << instr.immediate;
+                instr->result = rf[instr->rs1] << instr->immediate;
             } else if(op == "slti") {
-                instr.result = (int32_t)rf[instr.rs1] < instr.immediate;
+                instr->result = (int32_t)rf[instr->rs1] < instr->immediate;
             } else if(op == "sltiu") {
-                instr.result = rf[instr.rs1] < instr.immediate;
+                instr->result = rf[instr->rs1] < instr->immediate;
             } else if(op == "xori") {
-                instr.result = rf[instr.rs1] ^ instr.immediate;
+                instr->result = rf[instr->rs1] ^ instr->immediate;
             } else if(op == "ori") {
-                instr.result = rf[instr.rs1] | instr.immediate;
+                instr->result = rf[instr->rs1] | instr->immediate;
             } else if(op == "andi") {
-                instr.result = rf[instr.rs1] & instr.immediate;
+                instr->result = rf[instr->rs1] & instr->immediate;
             }
-            return instr;
+            instr->ready = true;
         }
     private: 
         Instruction *fetch;

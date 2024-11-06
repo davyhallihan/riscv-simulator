@@ -168,42 +168,52 @@ void Decoder::decodeOps() {
             break;
         case 2: //"I":
             instr = func3I[funct3];
-            //std::cout << func3I[funct3] << " x" << rd << ", x" << rs1 << ", " << signExtend12(immediate) << std::endl;
+            immediate = signExtend12(immediate);
+            std::cout << func3I[funct3] << " x" << rd << ", x" << rs1 << ", " << signExtend12(immediate) << std::endl;
             break;
         case 3: //"IL":
             instr = func3IL[funct3];
+            immediate = signExtend12(immediate);
             //std::cout << func3IL[funct3] << " x" << rd << ", " << signExtend12(immediate) << "(x" << rs1 << ")" << std::endl;
             break;
         case 4: //"LF":
             instr = "flw";
+            immediate = signExtend12(immediate);
             //std::cout << "flw f" << rd << ", " << signExtend12(immediate) << "(x" << rs1 << ")" << std::endl;
             break;
         case 5: //"S":
             instr = func3S[funct3];
+            immediate = signExtend12(immediate);
             //std::cout << func3S[funct3] << " x" << rs2 << ", " << signExtend12(immediate) << "(x" << rs1 << ")" << std::endl;
             break;
         case 6: //"SF":
             instr = "fsw";
+            immediate = signExtend12(immediate);
             //std::cout << "fsw f" << rs2 << ", " << signExtend12(immediate) << "(x" << rs1 << ")" << std::endl;
             break;
         case 7: //"B":
             instr = func3B[funct3];
+            immediate = signExtend13(immediate);
             //std::cout << func3B[funct3] << " x" << rs1 << ", x" << rs2 << ", " << signExtend13(immediate) << std::endl;
             break;
         case 8: //"JL": //jal
             instr = "jal";
+            immediate = signExtend20(immediate);
             //std::cout << "jal x" << rd << ", " << signExtend20(immediate) << std::endl;
             break;
         case 9: //"IR": //JALR
             instr = "jalr";
+            immediate = signExtend12(immediate);
             //std::cout << "jalr x" << rd << ", " << signExtend12(immediate) << "(x" << rs1 << ")" << std::endl;
             break;
         case 10: //"UL": //LUI
             instr = "lui";
+            immediate = signExtend20(immediate);
             //std::cout << "lui x" << rd << ", " << signExtend20(immediate) << std::endl;
             break;
         case 11: //"UA": //AUIPC
             instr = "auipc";
+            immediate = signExtend20(immediate);
             //std::cout << "auipc x" << rd << ", " << signExtend20(immediate) << std::endl;
             break;
     }

@@ -15,7 +15,7 @@ struct Instruction {
     uint32_t rs1;
     uint32_t rs2;
     uint32_t rd;
-    uint32_t immediate;
+    int immediate;
     int format;
     int reg_write;
     int alu_op;

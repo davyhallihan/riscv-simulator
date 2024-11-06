@@ -8,7 +8,8 @@
 
 class Decoder {
 public:
-    uint32_t instruction, opcode, rs1, rs2, rd, immediate, funct3, funct7;
+    uint32_t instruction, opcode, rs1, rs2, rd, funct3, funct7;
+    int immediate;
     uint32_t format;
 
     int reg_write = 0b0; //1 = true
