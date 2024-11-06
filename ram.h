@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <utility>
 #include <cstdlib>
+#include <string>
 
 class RAM {
     public:
@@ -23,12 +24,14 @@ class RAM {
         RAM();
         void initialize(std::vector<int> instructions);
         void cycle();
+        void printRange(std::string preamble, uint32_t start, uint32_t end);
 
     private:
         void writeInstructionsToRAM(std::vector<int> instructions);
         void initializeRandomRAM();
         uint32_t readFromRam(uint32_t address);
         void writeToRam(uint32_t address, uint32_t data);
+        
 };
 
 #endif // RAM_H

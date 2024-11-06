@@ -6,8 +6,15 @@
 
 struct Instruction {
     bool ready;
+    bool store;
+
+    bool go_branch;
+
+    bool loading;
+    uint32_t load_address;
     uint32_t instruction;
     uint32_t stall;
+    uint32_t stallNum;
     uint32_t result;
     std::string instr;
 
@@ -27,6 +34,7 @@ struct Instruction {
     int jump;
     int write_pc_to_reg;
     int write_reg_to_pc;
+    
     int change_pc;
 };
 

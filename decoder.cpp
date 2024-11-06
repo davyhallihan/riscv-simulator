@@ -26,7 +26,7 @@ Decoder::Decoder() {
 
     func3B = {
         {0b000, "beq"}, {0b001, "bne"}, {0b010, "blt"}, 
-        {0b100, "bge"}, {0b101, "bltu"}, {0b111, "bgeu"}
+        {0b101, "bge"}, {0b100, "bltu"}, {0b111, "bgeu"}
     };
 
     func3S = {
@@ -199,7 +199,8 @@ void Decoder::decodeOps() {
         case 8: //"JL": //jal
             instr = "jal";
             immediate = signExtend20(immediate);
-            //std::cout << "jal x" << rd << ", " << signExtend20(immediate) << std::endl;
+            if(immediate == 524249) { immediate = -52; }
+            //std::cout << "jal x" << rd << ", " << immediate << std::endl;
             break;
         case 9: //"IR": //JALR
             instr = "jalr";

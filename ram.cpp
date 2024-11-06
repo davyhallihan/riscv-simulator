@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iostream>
 #include "ram.h"
+#include <string>
 
 #define WAIT 9
 
@@ -22,6 +23,14 @@ RAM::RAM() {
     PORT_MEM_OP = false;
     PORT_INST1_OP = false;
     PORT_INST2_OP = false;
+}
+
+void RAM::printRange(std::string preamble, uint32_t start, uint32_t end) {
+    std::cout << preamble << " ";
+    for (uint32_t i = start; i < end; i += 4) {
+        std::cout << " " << readFromRam(i);
+    }
+    std::cout << std::endl;
 }
 
 void RAM::initialize(std::vector<int> instructions) {
@@ -121,8 +130,11 @@ void RAM::writeInstructionsToRAM(std::vector<int> instructions) {
 }
 
 void RAM::initializeRandomRAM() {
-    for (uint32_t address = 0x400; address <= 0xFFFF; address++) {
-        mem[address] = rand() % 256; // Random value between 0 and 255
+    for (uint32_t address = 0x400; address <= 0xBFF; address += 4) {
+        writeToRam(address, (rand() % 255) + 1);
+        // if((address - 1) % 4) {
+        //     mem[address] = rand() % 256; // Random value between 0 and 255
+        // }
     }
 }
 

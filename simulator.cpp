@@ -62,13 +62,20 @@ int main(int argc, char* argv[]) {
     //     uint32_t value = *reinterpret_cast<uint32_t*>(&memory->mem[i]);
     //     std::cout << std::bitset<32>(value) << " vs " << std::bitset<32>(instructions[i/4]) << std::endl;
     // }
-    while(true) {
+    bool done = false;
+    while(!done) {
         memory->cycle();
-        cpu1->cycle();
+        done = cpu1->cycle();
         cpu1->updateCycles(cpuclock->getClock());
+        
         
         cpuclock->increment();
     }
+
+    std::cout << "Simulation Complete" << std::endl;
+    memory->printRange("Array A: ", uint32_t(0x0400), uint32_t(0x07FF));
+    memory->printRange("Array B: ", uint32_t(0x0800), uint32_t(0x0BFF));
+    memory->printRange("Array C: ", uint32_t(0x0C00), uint32_t(0x0EFF));
     
 
     return 0;

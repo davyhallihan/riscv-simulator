@@ -9,14 +9,20 @@ class CPU {
     public:
         std::pair<uint32_t, uint32_t> PORT_I = std::make_pair(0, 0);
         std::pair<uint32_t, uint32_t> PORT_D = std::make_pair(0, 0);
-        uint32_t rf[32]; 
-        uint32_t FPrf[32];
-        uint32_t PC;
+        int rf[32]; 
+        int FPrf[32];
+        int PC;
         RAM *memory;
+        bool done = false;
+        std::string POLL_MEM = "";
 
         void initialize(RAM *in) {
             memory = in;
             PC = 0;
+            for(int i = 0; i < 32; i++) {
+                rf[i] = 0;
+                FPrf[i] = 0;
+            }
         }
 
         void updateCycles(uint32_t clock) {
@@ -29,17 +35,34 @@ class CPU {
             PC += 4;
         }
 
-        void cycle() {
+        bool cycle() {
             if(store != nullptr) { if(store->ready) { store = nullptr; } }
             if(store != nullptr && cpuTick) {
-                if(memory->PORT_MEM == std::make_pair(0u, 0u) && !storing) {
-                    memory->PORT_MEM = std::make_pair(store->rd, store->result);
-                    storing = true;
+                if(POLL_MEM == "") {
+                    POLL_MEM = "STORE";
                 }
-                if(memory->PORT_MEM == std::make_pair(0u,0u) && storing) {
+
+                if(POLL_MEM == "STORE") {
+                    if(store->store) {
+                        //std::cout << "STORING" << std::endl;
+                        //memory->printRange("Array C: ", uint32_t(0x0C00), uint32_t(0x0EFF));    
+                        if(memory->PORT_MEM == std::make_pair(0u, 0u) && !storing && !memory->PORT_MEM_OP) {
+                            memory->PORT_MEM = std::make_pair(store->rd, store->result);
+                            storing = true;
+                        }
+                        if(memory->PORT_MEM == std::make_pair(0u,0u) && storing) {
+                            store->ready = true;
+                            storing = false;
+                            memory->PORT_MEM_OP = false;
+                            POLL_MEM = "";
+                        }
+                    }
+                }
+
+                if(!store->store) {
                     store->ready = true;
                     storing = false;
-                    memory->PORT_MEM_OP = false;
+                    POLL_MEM = "";
                 }
             }
 
@@ -77,7 +100,7 @@ class CPU {
                             incrementPC();
                             memory->PORT_INST1 = std::make_pair(0u, 0u);
                             memory->PORT_INST1_OP = false;
-                            print_instr(*fetch, "LOADED FETCH");
+                            //print_instr(*fetch, "LOADED FETCH");
                         }
                     }
                 } 
@@ -104,13 +127,18 @@ class CPU {
             
             //if(cpuTick) { std::cout << "CPU TICK!" << std::endl;}
             if(cpuTick) { 
-                if(fetch) { print_instr(*fetch, "FETCH"); }
-                if(decode) { print_instr(*decode, "DECODE"); }
-                if(execute) { print_instr(*execute, "EXECUTE"); }
-                if(store) { print_instr(*store, "STORE"); }
-                std::cout << std::endl << "Press Enter to continue...";
-                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                // print_registers();
+                // std::cout << "PC " << PC << std::endl;
+                // if(fetch) { print_instr(*fetch, "FETCH"); }
+                // if(decode) { print_instr(*decode, "DECODE"); }
+                // if(execute) { print_instr(*execute, "EXECUTE"); }
+                // if(store) { print_instr(*store, "STORE"); }
+                // std::cout << "POLLING " << POLL_MEM << " " << memory->PORT_MEM.first << " " << memory->PORT_MEM.second << std::endl;
+                //std::cout << std::endl << "PC at : " << PC << " Press Enter to continue...";
+                //std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             } 
+
+            return done;
         }
 
         void print_instr(Instruction instr, std::string stage) {
@@ -134,7 +162,6 @@ class CPU {
             instr->rd = dc->rd;
             instr->rs1 = dc->rs1;
             instr->rs2 = dc->rs2;
-            std::cout << "PRINTING IMMEDIATE " << dc->immediate << std::endl;
             instr->immediate = dc->immediate;
             instr->format = dc->format;
             instr->reg_write = dc->reg_write;
@@ -154,66 +181,201 @@ class CPU {
         }
 
         void execute_instr(Instruction* instr) {
-            std::string op = instr->instr;
-            if(op == "add") {
-                instr->result = rf[instr->rs1] + rf[instr->rs2];
-            } else if(op == "sub") {
-                instr->result = rf[instr->rs1] - rf[instr->rs2];
-            } else if(op == "mul") {
-                instr->result = rf[instr->rs1] * rf[instr->rs2];
-            } else if(op == "div") {
-                instr->result = rf[instr->rs1] / rf[instr->rs2];
-            } else if(op == "sll") {
-                instr->result = rf[instr->rs1] << rf[instr->rs2];
-            } else if(op == "mulh") {
-                instr->result = (int32_t)rf[instr->rs1] * (int32_t)rf[instr->rs2] >> 32;
-            } else if(op == "slt") {
-                instr->result = (int32_t)rf[instr->rs1] < (int32_t)rf[instr->rs2];
-            } else if(op == "mulhsu") {
-                instr->result = (int32_t)rf[instr->rs1] * (uint32_t)rf[instr->rs2] >> 32;
-            } else if(op == "sltu") {
-                instr->result = rf[instr->rs1] < rf[instr->rs2];
-            } else if(op == "mulhu") {
-                instr->result = (uint32_t)rf[instr->rs1] * (uint32_t)rf[instr->rs2] >> 32;
-            } else if(op == "xor") {
-                instr->result = rf[instr->rs1] ^ rf[instr->rs2];
-            } else if(op == "divu") {
-                instr->result = rf[instr->rs1] / rf[instr->rs2];
-            } else if(op == "srl") {
-                instr->result = rf[instr->rs1] >> rf[instr->rs2];
-            } else if(op == "sra") {
-                instr->result = (int32_t)rf[instr->rs1] >> rf[instr->rs2];
-            } else if(op == "or") {
-                instr->result = rf[instr->rs1] | rf[instr->rs2];
-            } else if(op == "rem") {
-                instr->result = rf[instr->rs1] % rf[instr->rs2];
-            } else if(op == "and") {
-                instr->result = rf[instr->rs1] & rf[instr->rs2];
-            } else if(op == "remu") {
-                instr->result = rf[instr->rs1] % rf[instr->rs2];
-            } else if(op == "addi") {
-                instr->result = rf[instr->rs1] + instr->immediate;
-            } else if(op == "subi") {
-                instr->result = rf[instr->rs1] - instr->immediate;
-            } else if(op == "muli") {
-                instr->result = rf[instr->rs1] * instr->immediate;
-            } else if(op == "divi") {
-                instr->result = rf[instr->rs1] / instr->immediate;
-            } else if(op == "slli") {
-                instr->result = rf[instr->rs1] << instr->immediate;
-            } else if(op == "slti") {
-                instr->result = (int32_t)rf[instr->rs1] < instr->immediate;
-            } else if(op == "sltiu") {
-                instr->result = rf[instr->rs1] < instr->immediate;
-            } else if(op == "xori") {
-                instr->result = rf[instr->rs1] ^ instr->immediate;
-            } else if(op == "ori") {
-                instr->result = rf[instr->rs1] | instr->immediate;
-            } else if(op == "andi") {
-                instr->result = rf[instr->rs1] & instr->immediate;
+            if(instr->stall == 0 && !instr->loading) {
+                std::string op = instr->instr;
+                instr->loading = false;
+                instr->store = false;
+                instr->stallNum += 10;
+                instr->go_branch = false;
+                if(op == "add") {
+                    //std::cout << "adding result " << rf[instr->rs1] + rf[instr->rs2] << " to register " << instr->rd << " from " << rf[instr->rs1] << " + " << rf[instr->rs2] << std::endl;
+                    instr->result = rf[instr->rs1] + rf[instr->rs2];
+                    rf[instr->rd] = instr->result;
+                } else if(op == "sub") {
+                    instr->result = rf[instr->rs1] - rf[instr->rs2];
+                    rf[instr->rd] = instr->result;
+                } else if(op == "mul") {
+                    instr->result = rf[instr->rs1] * rf[instr->rs2];
+                    rf[instr->rd] = instr->result;
+                } else if(op == "div") {
+                    instr->result = rf[instr->rs1] / rf[instr->rs2];
+                    rf[instr->rd] = instr->result;
+                } else if(op == "sll") {
+                    instr->result = rf[instr->rs1] << rf[instr->rs2];
+                    rf[instr->rd] = instr->result;
+                } else if(op == "mulh") {
+                    instr->result = (int32_t)rf[instr->rs1] * (int32_t)rf[instr->rs2] >> 32;
+                    rf[instr->rd] = instr->result;
+                } else if(op == "slt") {
+                    instr->result = (int32_t)rf[instr->rs1] < (int32_t)rf[instr->rs2];
+                    rf[instr->rd] = instr->result;
+                } else if(op == "mulhsu") {
+                    instr->result = (int32_t)rf[instr->rs1] * (uint32_t)rf[instr->rs2] >> 32;
+                    rf[instr->rd] = instr->result;
+                } else if(op == "sltu") {
+                    instr->result = rf[instr->rs1] < rf[instr->rs2];
+                    rf[instr->rd] = instr->result;
+                } else if(op == "mulhu") {
+                    instr->result = (uint32_t)rf[instr->rs1] * (uint32_t)rf[instr->rs2] >> 32;
+                    rf[instr->rd] = instr->result;
+                } else if(op == "xor") {
+                    instr->result = rf[instr->rs1] ^ rf[instr->rs2];
+                    rf[instr->rd] = instr->result;
+                } else if(op == "divu") {
+                    instr->result = rf[instr->rs1] / rf[instr->rs2];
+                    rf[instr->rd] = instr->result;
+                } else if(op == "srl") {
+                    instr->result = rf[instr->rs1] >> rf[instr->rs2];
+                    rf[instr->rd] = instr->result;
+                } else if(op == "sra") {
+                    instr->result = (int32_t)rf[instr->rs1] >> rf[instr->rs2];
+                    rf[instr->rd] = instr->result;
+                } else if(op == "or") {
+                    instr->result = rf[instr->rs1] | rf[instr->rs2];
+                    rf[instr->rd] = instr->result;
+                } else if(op == "rem") {
+                    instr->result = rf[instr->rs1] % rf[instr->rs2];
+                    rf[instr->rd] = instr->result;
+                } else if(op == "and") {
+                    instr->result = rf[instr->rs1] & rf[instr->rs2];
+                    rf[instr->rd] = instr->result;
+                } else if(op == "remu") {
+                    instr->result = rf[instr->rs1] % rf[instr->rs2];
+                    rf[instr->rd] = instr->result;
+                } else if(op == "addi") {
+                    instr->result = rf[instr->rs1] + instr->immediate;
+                    rf[instr->rd] = instr->result;
+                } else if(op == "subi") {
+                    instr->result = rf[instr->rs1] - instr->immediate;
+                    rf[instr->rd] = instr->result;
+                } else if(op == "muli") {
+                    instr->result = rf[instr->rs1] * instr->immediate;
+                    rf[instr->rd] = instr->result;
+                } else if(op == "divi") {
+                    instr->result = rf[instr->rs1] / instr->immediate;
+                    rf[instr->rd] = instr->result;
+                } else if(op == "slli") {
+                    instr->result = rf[instr->rs1] << instr->immediate;
+                    rf[instr->rd] = instr->result;
+                } else if(op == "slti") {
+                    instr->result = (int32_t)rf[instr->rs1] < instr->immediate;
+                    rf[instr->rd] = instr->result;
+                } else if(op == "sltiu") {
+                    instr->result = rf[instr->rs1] < instr->immediate;
+                    rf[instr->rd] = instr->result;
+                } else if(op == "xori") {
+                    instr->result = rf[instr->rs1] ^ instr->immediate;
+                    rf[instr->rd] = instr->result;
+                } else if(op == "ori") {
+                    instr->result = rf[instr->rs1] | instr->immediate;
+                    rf[instr->rd] = instr->result;
+                } else if(op == "andi") {
+                    instr->result = rf[instr->rs1] & instr->immediate;
+                    rf[instr->rd] = instr->result;
+                } else if(op == "lw") {
+                    instr->loading = true;
+                    instr->load_address = rf[instr->rs1] + instr->immediate;
+                    //std::cout << instr->load_address << std::endl;
+                } else if(op == "lwu") {
+                    instr->loading = true;
+                    instr->load_address = rf[instr->rs1] + instr->immediate;
+                } else if(op == "lh") {
+                    instr->loading = true;
+                    instr->load_address = rf[instr->rs1] + instr->immediate;
+                } else if(op == "lhu") {
+                    instr->loading = true;
+                    instr->load_address = rf[instr->rs1] + instr->immediate;
+                } else if(op == "lb") {
+                    instr->loading = true;
+                    instr->load_address = rf[instr->rs1] + instr->immediate;
+                } else if(op == "lbu") {
+                    instr->loading = true;
+                    instr->load_address = rf[instr->rs1] + instr->immediate;
+                } else if(op == "sb") {
+
+                } else if(op == "sh") {
+
+                } else if(op == "sw") {
+                    instr->store = true;
+                    instr->result = rf[instr->rs2];
+                    instr->rd = rf[instr->rs1] + instr->immediate;
+                    //std::cout << "Storing " << instr->result << " at " << instr->rd << std::endl;
+                    //std::cout << "Stall " << instr->stallNum << std::endl;
+                } else if(op == "beq") {
+
+                } else if(op == "bne") {
+
+                } else if(op == "blt") {
+
+                } else if(op == "bge") {
+                    //std::cout << "CHECKING BGE" << std::endl;
+                    if(rf[instr->rs1] >= rf[instr->rs2]) {
+                        //std::cout << "BGE IS GREATER" << std::endl;
+                        instr->result = instr->immediate;
+                        instr->change_pc = 1;
+                    } else {
+                        //std::cout << "BGE IS LESSER" << std::endl;
+                        instr->change_pc = 0;
+                    }
+                } else if(op == "bltu") {
+                    instr->change_pc = 0;
+                } else if(op == "bgeu") {
+                        
+                } else if(op == "jal") {
+                    instr->result = PC + instr->immediate;
+                    rf[instr->rd] = instr->result + 4;
+                } else if(op == "jalr") {
+                    done = true;
+                } else if(op == "lui") {                   //DEF NEEDS MODIFICATION
+                    instr->result = instr->immediate;
+                    rf[instr->rd] = instr->result;
+                } else if(op == "auipc") {                //DEF NEEDS MODIFICATION
+                    instr->result = instr->immediate << 12;
+                    rf[instr->rd] = instr->result;
+                } else if(op == "fsw") {
+
+                } else if(op == "flw") {
+
+                }
+
+                instr->stall += instr->stallNum;
+            } else if(instr->loading) {
+                if(POLL_MEM == "") {
+                    POLL_MEM = "LOAD";
+                }
+
+                if(POLL_MEM == "LOAD") {
+                    if(memory->PORT_MEM.first == 0 && memory->PORT_MEM.second == 0 && !memory->PORT_MEM_OP) {
+                        memory->PORT_MEM = std::make_pair(instr->load_address, 0u);
+                    }
+                    
+                    if(memory->PORT_MEM.second != 0) {
+                        instr->loading = false;
+                        rf[instr->rd] = memory->PORT_MEM.second;
+                        memory->PORT_MEM = std::make_pair(0u, 0u);
+                        memory->PORT_MEM_OP = false;
+                        POLL_MEM = "";
+                        //std::cout << "Loaded from memory: " << rf[instr->rd] << std::endl;
+                    }
+
+                }
+                
+            } else {
+                instr->stall -= 10;
+                if(instr->stall == 0) {
+                    instr->ready = true;
+                }
             }
-            instr->ready = true;
         }
+
+        void print_registers() {
+            std::cout << "Registers ";
+            for(int i = 0; i < 32; i++) {
+                std::cout << rf[i] << " ";
+            }
+            std::cout << std::endl;
+        }
+
     private: 
         Instruction *fetch;
         Instruction *decode;
