@@ -6,6 +6,8 @@
 #include <iostream>
 #include "ram.h"
 #include <string>
+#include "poll.h"
+#include "port.h"
 
 #define WAIT 9
 
@@ -14,118 +16,92 @@ RAM::RAM() {
         mem[i] = 0;
     }
 
-    PORT_MEM = std::make_pair(0u, 0u);
-    PORT_INST1 = std::make_pair(0u, 0u);
-    PORT_INST2 = std::make_pair(0u, 0u);
     MEMSTALL = 0;
     INST1STALL = 0;
     INST2STALL = 0;
-    PORT_MEM_OP = false;
-    PORT_INST1_OP = false;
-    PORT_INST2_OP = false;
 }
 
 void RAM::printRange(std::string preamble, uint32_t start, uint32_t end) {
     std::cout << preamble << " ";
     for (uint32_t i = start; i < end; i += 4) {
-        std::cout << " " << readFromRam(i);
+        int val = readFromRam(i);
+        std::cout << val << " ";        
     }
     std::cout << std::endl;
 }
 
-void RAM::initialize(std::vector<int> instructions) {
-    writeInstructionsToRAM(instructions);
+void RAM::initialize(std::vector<int> instructions1, std::vector<int> instructions2, MEMBUS* commline) {
+    writeInstructionsToRAM(instructions1, 0x000);
+    writeInstructionsToRAM(instructions2, 0x100);
     std::srand(std::time(0));
     initializeRandomRAM();
     totalTicks = 10;
+    bus = commline;
 } 
 
 void RAM::cycle() {
     if(totalTicks == 0) {
-        if (PORT_MEM.first != 0 && PORT_MEM_OP == false) {
-            if (PORT_MEM.second != 0) {
-                if (MEMSTALL == 0) {
-                    MEMSTALL = WAIT;
-                } else {
-                    MEMSTALL--;
-                    if(MEMSTALL == 0) {
-                        writeToRam(PORT_MEM.first, PORT_MEM.second);
-                        PORT_MEM = std::make_pair(0, 0);
-                        PORT_MEM_OP = true;
-                    }
-                }
-            } else {
-                if (MEMSTALL == 0) {
-                    MEMSTALL = WAIT;
-                } else {
-                    MEMSTALL--;
-                    if(MEMSTALL == 0) {
-                        PORT_MEM.second = readFromRam(PORT_MEM.first);
-                        PORT_MEM_OP = true;
-                    }
-                }
+        if(bus->MEM->msg != nullptr) {
+            if(MEMSTALL == 0) {
+                MEMSTALL = WAIT;
+            }
+
+            MEMSTALL--;
+            if(bus->MEM->msg->rw && MEMSTALL == 0) {
+                bus->MEM->msg->result = readFromRam(bus->MEM->msg->address);
+                bus->MEM->msg->done = true;
+                bus->MEM->msg = nullptr;
+            } else if(!bus->MEM->msg->rw && MEMSTALL == 0) {
+                std::cout << "Writing to RAM at address " << bus->MEM->msg->address << " data " << bus->MEM->msg->data << std::endl;
+                writeToRam(bus->MEM->msg->address, bus->MEM->msg->data);
+                bus->MEM->msg->done = true;
+                bus->MEM->msg = nullptr;
             }
         }
 
-        //std::cout << "RAM INST1 stall is " << INST1STALL << std::endl;
-        //std::cout << "RAM INST1 pair is " << PORT_INST1.first << " " << PORT_INST1.second << std::endl;
-        if (PORT_INST1.first != 0 && PORT_INST1_OP == false) {
-            if (PORT_INST1.second != 0) {
-                if(INST1STALL == 0) {
-                    INST1STALL = WAIT;
-                } else {
-                    INST1STALL--;
-                    if(INST1STALL == 0) {
-                        writeToRam(PORT_INST1.first - 4, PORT_INST1.second);
-                        PORT_INST1 = std::make_pair(0, 0);
-                        PORT_INST1_OP = true;
-                    }
-                }
-            } else {
-                if(INST1STALL == 0) {
-                    INST1STALL = WAIT;
-                } else {
-                    INST1STALL--;
-                    if(INST1STALL == 0) {
-                        PORT_INST1.second = readFromRam(PORT_INST1.first - 4);
-                        PORT_INST1_OP = true;
-                    }
-                }
+        if(bus->INST1->msg != nullptr) {
+            if(INST1STALL == 0) {
+                INST1STALL = WAIT;
+            }
+
+            INST1STALL--;
+            if(bus->INST1->msg->rw && INST1STALL == 0) {
+                bus->INST1->msg->result = readFromRam(bus->INST1->msg->address);
+                bus->INST1->msg->done = true;
+                bus->INST1->msg = nullptr;
+            } else if(!bus->INST1->msg->rw && INST1STALL == 0) {
+                writeToRam(bus->INST1->msg->address, bus->INST1->msg->data);
+                bus->INST1->msg->done = true;
+                bus->INST1->msg = nullptr;
             }
         }
 
-        if (PORT_INST2.first != 0 && PORT_INST2_OP == false) {
-            if (PORT_INST2.second != 0) {
-                if(INST2STALL == 0) {
-                    INST2STALL = WAIT;
-                } else {
-                    INST2STALL--;
-                    if(INST2STALL == 0) {
-                        writeToRam(PORT_INST2.first - 4, PORT_INST2.second);
-                        PORT_INST2 = std::make_pair(0, 0);
-                        PORT_INST2_OP = true;
-                    }
-                }
-            } else {
-                if(INST2STALL == 0) {
-                    INST2STALL = WAIT;
-                } else {
-                    INST2STALL--;
-                    if(INST2STALL == 0) {
-                        PORT_INST2.second = readFromRam(PORT_INST2.first - 4);
-                        PORT_INST2_OP = true;
-                    }
-                }
+        if(bus->INST2->msg != nullptr) {
+            if(INST2STALL == 0) {
+                INST2STALL = WAIT;
+            }
+
+            INST2STALL--;
+            if(bus->INST2->msg->rw && INST2STALL == 0) {
+                bus->INST2->msg->result = readFromRam(bus->INST2->msg->address + 0x100);
+                bus->INST2->msg->done = true;
+                bus->INST2->msg = nullptr;
+            } else if(!bus->INST2->msg->rw && INST2STALL == 0) {
+                writeToRam(bus->INST2->msg->address + 0x100, bus->INST2->msg->data);
+                bus->INST2->msg->done = true;
+                bus->INST2->msg = nullptr;
             }
         }
+        
+
     } else {
         totalTicks--;
     }
 }
 
-void RAM::writeInstructionsToRAM(std::vector<int> instructions) {
+void RAM::writeInstructionsToRAM(std::vector<int> instructions, int start) {
     for (int i = 0; i < instructions.size(); i++) {
-        writeToRam(i * 4, instructions[i]);
+        writeToRam((i * 4) + start, instructions[i]);
     }
 }
 

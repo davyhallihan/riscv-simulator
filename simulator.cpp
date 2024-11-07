@@ -13,8 +13,8 @@
 CPUCLOCK *cpuclock = new CPUCLOCK();
 RAM *memory = new RAM();
 CPU *cpu1 = new CPU();
-// CPU *cpu2 = new CPU();
-// MEMBUS *bus = new MEMBUS();
+CPU *cpu2 = new CPU();
+MEMBUS *bus = new MEMBUS();
 
 
 
@@ -47,35 +47,49 @@ std::vector<int> instructionsFromFile(const std::string& filename) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc < 2 || argc > 3) { std::cerr << "Usage: " << argv[0] << " <filename>" << std::endl; return 1; }
-    std::string filename = argv[1];
-    std::cout << "Initializing Simulator With Filename: " << filename << std::endl;
+    if (argc < 2 || argc > 4) { std::cerr << "Usage: " << argv[0] << " <filename>" << std::endl; return 1; }
+    std::string filename1 = argv[1];
+    std::string filename2 = argv[2];
+    std::cout << "Initializing Simulator With Filenames: " << filename1 << " " << filename2 << std::endl;
 
-    std::vector<int> instructions = instructionsFromFile(filename);
-    std::cout << "Found: " << instructions.size() << " instructions" << std::endl;
+    std::vector<int> instructions1 = instructionsFromFile(filename1);
+    std::vector<int> instructions2 = instructionsFromFile(filename2);
+    std::cout << "File 1, " << filename1 << ": " << instructions1.size() << " instructions" << std::endl;
+    std::cout << "File 2, " << filename2 << ": " << instructions2.size() << " instructions" << std::endl;
 
-    memory->initialize(instructions);
-    cpu1->initialize(memory);
+    memory->initialize(instructions1, instructions2, bus);
+    cpu1->initialize(bus, 0);
+    cpu2->initialize(bus, 1);
 
     //UNIT TEST TO VERIFY INITIALIZATION WORKING PROPERLY
     // for(int i = 0; i < 4*21; i += 4) {
     //     uint32_t value = *reinterpret_cast<uint32_t*>(&memory->mem[i]);
     //     std::cout << std::bitset<32>(value) << " vs " << std::bitset<32>(instructions[i/4]) << std::endl;
     // }
-    bool done = false;
-    while(!done) {
-        memory->cycle();
-        done = cpu1->cycle();
-        cpu1->updateCycles(cpuclock->getClock());
-        
-        
+    bool done1 = false;
+    bool done2 = false;
+    while(!done1 || !done2) {
+        if(!done1) {
+            done1 = cpu1->cycle();
+            cpu1->updateCycles(cpuclock->getClock());
+        }
+        if(!done2){
+            done2 = cpu2->cycle();
+            cpu2->updateCycles(cpuclock->getClock());
+        }
+        bus->cycle();
         cpuclock->increment();
+        memory->cycle();
+        if(!(cpuclock->getClock() % 100)) {
+            //std::cout << cpu1->PC << " " << cpu2->PC << std::endl;
+        }
     }
 
     std::cout << "Simulation Complete" << std::endl;
     memory->printRange("Array A: ", uint32_t(0x0400), uint32_t(0x07FF));
     memory->printRange("Array B: ", uint32_t(0x0800), uint32_t(0x0BFF));
     memory->printRange("Array C: ", uint32_t(0x0C00), uint32_t(0x0EFF));
+    memory->printRange("Array D: ", uint32_t(0x1000), uint32_t(0x13FF));
     
 
     return 0;

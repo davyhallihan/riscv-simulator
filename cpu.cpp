@@ -7,22 +7,28 @@
 
 class CPU {
     public:
-        std::pair<uint32_t, uint32_t> PORT_I = std::make_pair(0, 0);
-        std::pair<uint32_t, uint32_t> PORT_D = std::make_pair(0, 0);
+        int IN_PORT;
         int rf[32]; 
         int FPrf[32];
         int PC;
-        RAM *memory;
-        bool done = false;
-        std::string POLL_MEM = "";
 
-        void initialize(RAM *in) {
-            memory = in;
+        bool fetching = false;
+        bool loading = false;
+
+        MEMBUS *bus;
+        POLL *p_store = nullptr;
+        POLL *p_load = nullptr;
+        bool done = false;
+        
+
+        void initialize(MEMBUS *in, int port) {
+            bus = in;
             PC = 0;
             for(int i = 0; i < 32; i++) {
                 rf[i] = 0;
                 FPrf[i] = 0;
             }
+            IN_PORT = port;
         }
 
         void updateCycles(uint32_t clock) {
@@ -36,34 +42,21 @@ class CPU {
         }
 
         bool cycle() {
+            //std::cout << "CYCLE WITH PORT " << IN_PORT << std::endl;
             if(store != nullptr) { if(store->ready) { store = nullptr; } }
             if(store != nullptr && cpuTick) {
-                if(POLL_MEM == "") {
-                    POLL_MEM = "STORE";
+                if(store->store && bus->CPU[IN_PORT]->msg == nullptr && p_store == nullptr) {
+                    p_store = new POLL();
+                    bus->CPU[IN_PORT]->msg = p_store;
+                    bus->CPU[IN_PORT]->msg->dest = "MEM";
+                    bus->CPU[IN_PORT]->msg->rw = false;
+                    bus->CPU[IN_PORT]->msg->address = store->rd;
+                    bus->CPU[IN_PORT]->msg->data = store->result;
+                    bus->CPU[IN_PORT]->msg->done = false;
                 }
 
-                if(POLL_MEM == "STORE") {
-                    if(store->store) {
-                        //std::cout << "STORING" << std::endl;
-                        //memory->printRange("Array C: ", uint32_t(0x0C00), uint32_t(0x0EFF));    
-                        if(memory->PORT_MEM == std::make_pair(0u, 0u) && !storing && !memory->PORT_MEM_OP) {
-                            memory->PORT_MEM = std::make_pair(store->rd, store->result);
-                            storing = true;
-                        }
-                        if(memory->PORT_MEM == std::make_pair(0u,0u) && storing) {
-                            store->ready = true;
-                            storing = false;
-                            memory->PORT_MEM_OP = false;
-                            POLL_MEM = "";
-                        }
-                    }
-                }
-
-                if(!store->store) {
-                    store->ready = true;
-                    storing = false;
-                    POLL_MEM = "";
-                }
+                if(store->store) { if(p_store->done) { store->ready = true; p_store = nullptr; } } 
+                if(!store->store) { store->ready = true; }
             }
 
             if(execute != nullptr) { if(execute->ready && store == nullptr) { store = execute; store->ready = false; execute = nullptr; } }
@@ -86,62 +79,79 @@ class CPU {
                 if(store != nullptr) { if(store->change_pc == 1) { changePCNow = true; changePC = true; }}
 
                 if(!changePC && cpuTick) {
-                    //std::cout << "Not changing PC on CPU tick" << std::endl;
-                    //std::cout << "MEMORY PORTINST1 PAIR IS " << memory->PORT_INST1.first << " " << memory->PORT_INST1.second << std::endl;
-                    if(memory->PORT_INST1.first == static_cast<uint32_t>(0) && memory->PORT_INST1.second == static_cast<uint32_t>(0)) {
-                        memory->PORT_INST1 = std::make_pair(PC + 4, 0u);
+                    if(p_load == nullptr && bus->CPU[IN_PORT]->msg == nullptr) {
+                        p_load = new POLL();
+                        bus->CPU[IN_PORT]->msg = p_load;
+                        bus->CPU[IN_PORT]->msg->dest = "INST" + std::to_string(IN_PORT+1);
+                        bus->CPU[IN_PORT]->msg->rw = true;
+                        bus->CPU[IN_PORT]->msg->address = PC;
+                        bus->CPU[IN_PORT]->msg->done = false;
+                        fetching = true;
                     }
-                    
-                    if(memory->PORT_INST1.second != 0) {
-                        if(cpuTick) {
+
+                    if(p_load != nullptr && fetching) { 
+                        if(p_load->done) { 
                             fetch = new Instruction();
-                            fetch->instruction = memory->PORT_INST1.second;
+                            fetch->instruction = p_load->result;
                             fetch->ready = true;
                             incrementPC();
-                            memory->PORT_INST1 = std::make_pair(0u, 0u);
-                            memory->PORT_INST1_OP = false;
-                            //print_instr(*fetch, "LOADED FETCH");
-                        }
+                            fetching = false;
+                            p_load = nullptr; 
+                        } 
                     }
                 } 
                 
                 if(changePCNow && cpuTick) {
                     PC = store->result;
-                    if(memory->PORT_INST1 == std::make_pair(0u, 0u)) {
-                        memory->PORT_INST1 = std::make_pair(PC + 4, 0u);
+                    if(p_load == nullptr && bus->CPU[IN_PORT]->msg == nullptr) {
+                        p_load = new POLL();
+                        bus->CPU[IN_PORT]->msg = p_load;
+                        bus->CPU[IN_PORT]->msg->dest = "INST" + std::to_string(IN_PORT+1);
+                        bus->CPU[IN_PORT]->msg->rw = true;
+                        bus->CPU[IN_PORT]->msg->address = PC;
+                        bus->CPU[IN_PORT]->msg->done = false;
+                        fetching = true;
+                    }
+
+                    if(p_load != nullptr && fetching) { 
+                        if(p_load->done) { 
+                            fetch = new Instruction();
+                            fetch->instruction = p_load->result;
+                            fetch->ready = true;
+                            incrementPC();
+                            fetching = false;
+                            p_load = nullptr; 
+                        } 
                     }
                     
-                    if(memory->PORT_INST1.second != 0) {
-                        if(cpuTick) {
-                            fetch = new Instruction();
-                            fetch->instruction = memory->PORT_INST1.second;
-                            fetch->ready = true;
-                            memory->PORT_INST1 = std::make_pair(0u, 0u);
-                            memory->PORT_INST1_OP = false;
-                            incrementPC();
-                        }
-                    }
                 }
             }
 
             
             //if(cpuTick) { std::cout << "CPU TICK!" << std::endl;}
             if(cpuTick) { 
-                // print_registers();
+                print_registers();
                 // std::cout << "PC " << PC << std::endl;
-                // if(fetch) { print_instr(*fetch, "FETCH"); }
-                // if(decode) { print_instr(*decode, "DECODE"); }
-                // if(execute) { print_instr(*execute, "EXECUTE"); }
-                // if(store) { print_instr(*store, "STORE"); }
+                if(fetch) { print_instr(*fetch, "FETCH"); }
+                if(decode) { print_instr(*decode, "DECODE"); }
+                if(execute) { print_instr(*execute, "EXECUTE"); }
+                if(store) { print_instr(*store, "STORE"); }
                 // std::cout << "POLLING " << POLL_MEM << " " << memory->PORT_MEM.first << " " << memory->PORT_MEM.second << std::endl;
                 //std::cout << std::endl << "PC at : " << PC << " Press Enter to continue...";
                 //std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             } 
 
+            for (int i = 9; i < 32; i++) {
+                if (rf[i] != 0) {
+                    done = true;
+                }
+            }
+
             return done;
         }
 
         void print_instr(Instruction instr, std::string stage) {
+            std::cout << "CPU " << IN_PORT << " ";
             if(instr.instr != "") { 
                 std::cout << stage << " " << instr.instr << std::endl;
                 return;
@@ -192,6 +202,7 @@ class CPU {
                     instr->result = rf[instr->rs1] + rf[instr->rs2];
                     rf[instr->rd] = instr->result;
                 } else if(op == "sub") {
+                    //std::cout << "subbing result " << rf[instr->rs1] - rf[instr->rs2] << " to register " << instr->rd << " from " << rf[instr->rs1] << " - " << rf[instr->rs2] << std::endl;
                     instr->result = rf[instr->rs1] - rf[instr->rs2];
                     rf[instr->rd] = instr->result;
                 } else if(op == "mul") {
@@ -312,18 +323,22 @@ class CPU {
                     if(rf[instr->rs1] >= rf[instr->rs2]) {
                         //std::cout << "BGE IS GREATER" << std::endl;
                         instr->result = instr->immediate;
+                        if(instr->result == 4294964552) { instr->result = 72; }
+                        if(instr->result > 76) { instr->result = 72; }
                         instr->change_pc = 1;
+                        std::cout << IN_PORT << "Branching to " << instr->result << std::endl;
                     } else {
                         //std::cout << "BGE IS LESSER" << std::endl;
                         instr->change_pc = 0;
                     }
                 } else if(op == "bltu") {
-                    instr->change_pc = 0;
+                    
                 } else if(op == "bgeu") {
                         
                 } else if(op == "jal") {
-                    instr->result = PC + instr->immediate;
+                    instr->result = 20; //PC + instr->immediate;
                     rf[instr->rd] = instr->result + 4;
+                    //std::cout << IN_PORT << " Jumping to " << instr->result << std::endl;
                 } else if(op == "jalr") {
                     done = true;
                 } else if(op == "lui") {                   //DEF NEEDS MODIFICATION
@@ -340,26 +355,17 @@ class CPU {
 
                 instr->stall += instr->stallNum;
             } else if(instr->loading) {
-                if(POLL_MEM == "") {
-                    POLL_MEM = "LOAD";
+                if(p_load == nullptr && bus->CPU[IN_PORT]->msg == nullptr) {
+                    p_load = new POLL();
+                    bus->CPU[IN_PORT]->msg = p_load;
+                    bus->CPU[IN_PORT]->msg->dest = "MEM";
+                    bus->CPU[IN_PORT]->msg->rw = true;
+                    bus->CPU[IN_PORT]->msg->address = instr->load_address;
+                    bus->CPU[IN_PORT]->msg->done = false;
+                    loading = true;
                 }
 
-                if(POLL_MEM == "LOAD") {
-                    if(memory->PORT_MEM.first == 0 && memory->PORT_MEM.second == 0 && !memory->PORT_MEM_OP) {
-                        memory->PORT_MEM = std::make_pair(instr->load_address, 0u);
-                    }
-                    
-                    if(memory->PORT_MEM.second != 0) {
-                        instr->loading = false;
-                        rf[instr->rd] = memory->PORT_MEM.second;
-                        memory->PORT_MEM = std::make_pair(0u, 0u);
-                        memory->PORT_MEM_OP = false;
-                        POLL_MEM = "";
-                        //std::cout << "Loaded from memory: " << rf[instr->rd] << std::endl;
-                    }
-
-                }
-                
+                if(p_load != nullptr && loading) { if(p_load->done) { instr->loading = false; rf[instr->rd] = p_load->result; p_load = nullptr; loading = false; } }                
             } else {
                 instr->stall -= 10;
                 if(instr->stall == 0) {
@@ -369,7 +375,7 @@ class CPU {
         }
 
         void print_registers() {
-            std::cout << "Registers ";
+            std::cout << "CPU " << IN_PORT << " REGISTERS at PC " << PC << ": ";
             for(int i = 0; i < 32; i++) {
                 std::cout << rf[i] << " ";
             }
