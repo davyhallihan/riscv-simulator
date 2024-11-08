@@ -1,2 +1,2 @@
 make
-./riscv-simulator asm-files/vadd.s asm-files/vsub.s
+./riscv-simulator asm-files/vsub.s asm-files/vadd.s

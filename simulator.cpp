@@ -86,10 +86,10 @@ int main(int argc, char* argv[]) {
     }
 
     std::cout << "Simulation Complete" << std::endl;
-    memory->printRange("Array A: ", uint32_t(0x0400), uint32_t(0x07FF));
-    memory->printRange("Array B: ", uint32_t(0x0800), uint32_t(0x0BFF));
-    memory->printRange("Array C: ", uint32_t(0x0C00), uint32_t(0x0EFF));
-    memory->printRange("Array D: ", uint32_t(0x1000), uint32_t(0x13FF));
+    memory->printRange("Array A: ", uint32_t(0x0400), uint32_t(0x0400 + 255*4));
+    memory->printRange("Array B: ", uint32_t(0x0800), uint32_t(0x0800 + 255*4));
+    memory->printRange("Array C: ", uint32_t(0x0C00), uint32_t(0x0C00 + 255*4));
+    memory->printRange("Array D: ", uint32_t(0x1000), uint32_t(0x1000 + 255*4));
     
 
     return 0;
