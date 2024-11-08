@@ -52,7 +52,7 @@ void RAM::cycle() {
                 bus->MEM->msg->done = true;
                 bus->MEM->msg = nullptr;
             } else if(!bus->MEM->msg->rw && MEMSTALL == 0) {
-                std::cout << "Writing to RAM at address " << bus->MEM->msg->address << " data " << bus->MEM->msg->data << std::endl;
+                //std::cout << "Writing to RAM at address " << bus->MEM->msg->address << " data " << bus->MEM->msg->data << std::endl;
                 writeToRam(bus->MEM->msg->address, bus->MEM->msg->data);
                 bus->MEM->msg->done = true;
                 bus->MEM->msg = nullptr;

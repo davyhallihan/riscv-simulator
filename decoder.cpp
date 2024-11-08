@@ -49,8 +49,8 @@ int32_t Decoder::signExtend12(int immediate) {
 }
 
 int32_t Decoder::signExtend20(int immediate) {
-    if (immediate & 0x80000) {
-        return immediate | 0xFFF00000;
+    if (immediate & 0xE0000) {
+        return immediate | 0xFFE00000;
     } else {
         return immediate;
     }
@@ -106,7 +106,7 @@ void Decoder::getOps() {
             break;
         case 8: //"JL": //REQUIRES SPECIAL HANDLING FOR J FORMAT
             rd = (instruction >> 7) & 0b11111;
-            immediate = ((instruction >> 20) & 0b1) | ((instruction >> 21) & 0b1111111111) << 1 | ((instruction >> 12) & 0b11111111) << 11;
+            immediate = ((instruction >> 31) & 0b1) << 20 | ((instruction >> 21) & 0b1111111111) << 1 | ((instruction >> 20) & 0b1) << 11 | ((instruction >> 12) & 0b11111111) << 12;
             break;
         case 10: //"UL":
         case 11: //"UA":
@@ -207,7 +207,7 @@ void Decoder::decodeOps() {
         case 8: //"JL": //jal
             instr = "jal";
             immediate = signExtend20(immediate);
-            if(immediate == 524249) { immediate = -52; }
+            //if(immediate == 524249) { immediate = -52; }
             //std::cout << "jal x" << rd << ", " << immediate << std::endl;
             break;
         case 9: //"IR": //JALR

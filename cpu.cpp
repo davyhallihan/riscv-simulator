@@ -130,22 +130,22 @@ class CPU {
             
             //if(cpuTick) { std::cout << "CPU TICK!" << std::endl;}
             if(cpuTick) { 
-                print_registers();
+                // print_registers();
                 // std::cout << "PC " << PC << std::endl;
-                if(fetch) { print_instr(*fetch, "FETCH"); }
-                if(decode) { print_instr(*decode, "DECODE"); }
-                if(execute) { print_instr(*execute, "EXECUTE"); }
-                if(store) { print_instr(*store, "STORE"); }
+                // if(fetch) { print_instr(*fetch, "FETCH"); }
+                // if(decode) { print_instr(*decode, "DECODE"); }
+                // if(execute) { print_instr(*execute, "EXECUTE"); }
+                // if(store) { print_instr(*store, "STORE"); }
                 // std::cout << "POLLING " << POLL_MEM << " " << memory->PORT_MEM.first << " " << memory->PORT_MEM.second << std::endl;
                 //std::cout << std::endl << "PC at : " << PC << " Press Enter to continue...";
                 //std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             } 
 
-            for (int i = 9; i < 32; i++) {
-                if (rf[i] != 0) {
-                    done = true;
-                }
-            }
+            // for (int i = 9; i < 32; i++) {
+            //     if (rf[i] != 0) {
+            //         done = true;
+            //     }
+            // }
 
             return done;
         }
@@ -326,7 +326,7 @@ class CPU {
                         if(instr->result == 4294964552) { instr->result = 72; }
                         if(instr->result > 76) { instr->result = 72; }
                         instr->change_pc = 1;
-                        std::cout << IN_PORT << "Branching to " << instr->result << std::endl;
+                        //std::cout << IN_PORT << "Branching to " << instr->result << std::endl;
                     } else {
                         //std::cout << "BGE IS LESSER" << std::endl;
                         instr->change_pc = 0;
@@ -336,7 +336,7 @@ class CPU {
                 } else if(op == "bgeu") {
                         
                 } else if(op == "jal") {
-                    instr->result = 20; //PC + instr->immediate;
+                    instr->result = PC + instr->immediate;
                     rf[instr->rd] = instr->result + 4;
                     //std::cout << IN_PORT << " Jumping to " << instr->result << std::endl;
                 } else if(op == "jalr") {
