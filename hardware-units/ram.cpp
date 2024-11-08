@@ -25,7 +25,7 @@ void RAM::printRange(std::string preamble, uint32_t start, uint32_t end) {
     std::cout << preamble << " ";
     for (uint32_t i = start; i < end; i += 4) {
         int val = readFromRam(i);
-        std::cout << val << " ";        
+        std::cout << float(val) << " ";        
     }
     std::cout << std::endl;
 }
@@ -108,9 +108,6 @@ void RAM::writeInstructionsToRAM(std::vector<int> instructions, int start) {
 void RAM::initializeRandomRAM() {
     for (uint32_t address = 0x400; address <= 0xBFF; address += 4) {
         writeToRam(address, (rand() % 255) + 1);
-        // if((address - 1) % 4) {
-        //     mem[address] = rand() % 256; // Random value between 0 and 255
-        // }
     }
 }
 

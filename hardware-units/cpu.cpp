@@ -9,7 +9,7 @@ class CPU {
     public:
         int IN_PORT;
         int rf[32]; 
-        int FPrf[32];
+        float FPrf[32];
         int PC;
 
         bool fetching = false;
@@ -69,7 +69,7 @@ class CPU {
                 decode_instr(decode);
             }
             
-            if(fetch) { if(fetch->ready && decode == nullptr) { decode = fetch; decode->ready = false; fetch = nullptr; } }
+            if(fetch) { if(fetch->ready && decode == nullptr) { decode = fetch; decode->ready = false; fetch = nullptr; instructioncount++; } }
             if(fetch == nullptr) {
                 //std::cout << "Fetch is null" << std::endl;
                 bool changePC = false;
@@ -130,7 +130,7 @@ class CPU {
             
             //if(cpuTick) { std::cout << "CPU TICK!" << std::endl;}
             if(cpuTick) { 
-                // print_registers();
+                print_registers();
                 // std::cout << "PC " << PC << std::endl;
                 // if(fetch) { print_instr(*fetch, "FETCH"); }
                 // if(decode) { print_instr(*decode, "DECODE"); }
@@ -286,7 +286,6 @@ class CPU {
                 } else if(op == "lw") {
                     instr->loading = true;
                     instr->load_address = rf[instr->rs1] + instr->immediate;
-                    //std::cout << instr->load_address << std::endl;
                 } else if(op == "lwu") {
                     instr->loading = true;
                     instr->load_address = rf[instr->rs1] + instr->immediate;
@@ -303,42 +302,62 @@ class CPU {
                     instr->loading = true;
                     instr->load_address = rf[instr->rs1] + instr->immediate;
                 } else if(op == "sb") {
-
+                    instr->store = true;
+                    instr->result = rf[instr->rs2];
+                    instr->rd = rf[instr->rs1] + instr->immediate;
                 } else if(op == "sh") {
-
+                    instr->store = true;
+                    instr->result = rf[instr->rs2];
+                    instr->rd = rf[instr->rs1] + instr->immediate;
                 } else if(op == "sw") {
                     instr->store = true;
                     instr->result = rf[instr->rs2];
                     instr->rd = rf[instr->rs1] + instr->immediate;
-                    //std::cout << "Storing " << instr->result << " at " << instr->rd << std::endl;
-                    //std::cout << "Stall " << instr->stallNum << std::endl;
                 } else if(op == "beq") {
-
-                } else if(op == "bne") {
-
-                } else if(op == "blt") {
-
-                } else if(op == "bge") {
-                    //std::cout << "CHECKING BGE" << std::endl;
-                    if(rf[instr->rs1] >= rf[instr->rs2]) {
-                        //std::cout << "BGE IS GREATER" << std::endl;
+                    if(rf[instr->rs1] == rf[instr->rs2]) {
                         instr->result = instr->immediate;
-                        if(instr->result == 4294964552) { instr->result = 72; }
-                        if(instr->result > 76) { instr->result = 72; }
                         instr->change_pc = 1;
-                        //std::cout << IN_PORT << "Branching to " << instr->result << std::endl;
                     } else {
-                        //std::cout << "BGE IS LESSER" << std::endl;
+                        instr->change_pc = 0;
+                    }
+                } else if(op == "bne") {
+                    if(rf[instr->rs1] != rf[instr->rs2]) {
+                        instr->result = instr->immediate;
+                        instr->change_pc = 1;
+                    } else {
+                        instr->change_pc = 0;
+                    }
+                } else if(op == "blt") {
+                    if(rf[instr->rs1] < rf[instr->rs2]) {
+                        instr->result = instr->immediate;
+                        instr->change_pc = 1;
+                    } else {
+                        instr->change_pc = 0;
+                    }
+                } else if(op == "bge") {
+                    if(rf[instr->rs1] >= rf[instr->rs2]) {
+                        instr->result = instr->immediate;
+                        instr->change_pc = 1;
+                    } else {
                         instr->change_pc = 0;
                     }
                 } else if(op == "bltu") {
-                    
+                    if(rf[instr->rs1] < rf[instr->rs2]) {
+                        instr->result = instr->immediate;
+                        instr->change_pc = 1;
+                    } else {
+                        instr->change_pc = 0;
+                    }
                 } else if(op == "bgeu") {
-                        
+                    if(rf[instr->rs1] > rf[instr->rs2]) {
+                        instr->result = instr->immediate;
+                        instr->change_pc = 1;
+                    } else {
+                        instr->change_pc = 0;
+                    } 
                 } else if(op == "jal") {
                     instr->result = PC + instr->immediate;
                     rf[instr->rd] = instr->result + 4;
-                    //std::cout << IN_PORT << " Jumping to " << instr->result << std::endl;
                 } else if(op == "jalr") {
                     done = true;
                 } else if(op == "lui") {                   //DEF NEEDS MODIFICATION
@@ -348,9 +367,22 @@ class CPU {
                     instr->result = instr->immediate << 12;
                     rf[instr->rd] = instr->result;
                 } else if(op == "fsw") {
-
+                    instr->stallNum += 40;
+                    instr->store = true;
+                    instr->result = uint32_t(FPrf[instr->rs2]);
+                    instr->rd = uint32_t(rf[instr->rs1] + instr->immediate);
                 } else if(op == "flw") {
-
+                    instr->stallNum += 40;
+                    instr->loading = true;
+                    instr->load_address = rf[instr->rs1] + instr->immediate;
+                } else if(op == "fadd.s") {
+                    instr->stallNum += 40;
+                    instr->result = FPrf[instr->rs1] + FPrf[instr->rs2];
+                    FPrf[instr->rd] = instr->result;
+                } else if(op == "fsub.s") {
+                    instr->stallNum += 40;
+                    instr->result = FPrf[instr->rs1] - FPrf[instr->rs2];
+                    FPrf[instr->rd] = instr->result;
                 }
 
                 instr->stall += instr->stallNum;
@@ -365,7 +397,18 @@ class CPU {
                     loading = true;
                 }
 
-                if(p_load != nullptr && loading) { if(p_load->done) { instr->loading = false; rf[instr->rd] = p_load->result; p_load = nullptr; loading = false; } }                
+                if(p_load != nullptr && loading) { 
+                    if(p_load->done) { 
+                        instr->loading = false; 
+                        if(instr->instr == "flw") {
+                            FPrf[instr->rd] = float(p_load->result);
+                        } else {
+                            rf[instr->rd] = float(p_load->result);
+                        } 
+                        p_load = nullptr; 
+                        loading = false; 
+                    } 
+                }                
             } else {
                 instr->stall -= 10;
                 if(instr->stall == 0) {
@@ -380,6 +423,12 @@ class CPU {
                 std::cout << rf[i] << " ";
             }
             std::cout << std::endl;
+
+            std::cout << "CPU " << IN_PORT << " F REGISTERS at PC " << PC << ": ";
+            for(int i = 0; i < 32; i++) {
+                std::cout << FPrf[i] << " ";
+            }
+            std::cout << std::endl;
         }
 
     private: 
@@ -388,6 +437,7 @@ class CPU {
         Instruction *execute;
         Instruction *store;
         uint32_t cycles;
+        uint32_t instructioncount;
         bool storing;
         bool cpuTick;
 

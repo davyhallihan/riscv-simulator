@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
     // }
     bool done1 = false;
     bool done2 = false;
-    while(!done1 || !done2) {
+    while(!done1) { //|| !done2) {
         if(!done1) {
             done1 = cpu1->cycle();
             cpu1->updateCycles(cpuclock->getClock());
