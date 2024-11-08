@@ -7,8 +7,8 @@
 #include <cstdlib>
 #include <string>
 #include "membus.cpp"
-#include "poll.h"
-#include "port.h"
+#include "../formats/poll.h"
+#include "../formats/port.h"
 
 class RAM {
     public:

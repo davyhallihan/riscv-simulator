@@ -6,9 +6,9 @@
 #include <limits>
 #include <algorithm>
 #include <bitset>
-#include "ram.h"
-#include "clock.h"
-#include "cpu.cpp"
+#include "hardware-units/ram.h"
+#include "timing-utilities/clock.h"
+#include "hardware-units/cpu.cpp"
 
 CPUCLOCK *cpuclock = new CPUCLOCK();
 RAM *memory = new RAM();

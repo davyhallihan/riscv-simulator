@@ -6,8 +6,8 @@
 #include <iostream>
 #include "ram.h"
 #include <string>
-#include "poll.h"
-#include "port.h"
+#include "../formats/poll.h"
+#include "../formats/port.h"
 
 #define WAIT 9
 

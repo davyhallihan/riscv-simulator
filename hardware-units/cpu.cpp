@@ -1,7 +1,7 @@
 #include <cmath>
 #include <cstdint>
 #include <utility>
-#include "instruction.h"
+#include "../formats/instruction.h"
 #include "decoder.h"
 #include "ram.h"
 
