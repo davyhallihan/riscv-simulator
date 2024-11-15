@@ -4,6 +4,7 @@
 #include <utility>
 #include <algorithm>
 #include <iostream>
+#include <cstring>
 #include "ram.h"
 #include <string>
 #include "../formats/poll.h"
@@ -24,8 +25,7 @@ RAM::RAM() {
 void RAM::printRange(std::string preamble, uint32_t start, uint32_t end) {
     std::cout << preamble << " ";
     for (uint32_t i = start; i < end; i += 4) {
-        int val = readFromRam(i);
-        std::cout << float(val) << " ";        
+        std::cout << float(readFromRam(i)) << " ";        
     }
     std::cout << std::endl;
 }
@@ -112,10 +112,10 @@ void RAM::initializeRandomRAM() {
 }
 
 //Functions only for internal use and loading of instructions
-uint32_t RAM::readFromRam(uint32_t address) {
+int32_t RAM::readFromRam(uint32_t address) {
     return *reinterpret_cast<uint32_t*>(&mem[address]);
 }
 
-void RAM::writeToRam(uint32_t address, uint32_t data) {
-    *reinterpret_cast<uint32_t*>(&mem[address]) = data;
+void RAM::writeToRam(uint32_t address, int32_t data) {
+    *reinterpret_cast<int32_t*>(&mem[address]) = data;
 }

@@ -86,6 +86,12 @@ int main(int argc, char* argv[]) {
     }
 
     std::cout << "Simulation Complete" << std::endl;
+    std::cout << "CPU 1 Instruction Count: " << cpu1->instructioncount << std::endl;
+    std::cout << "CPU 2 Instruction Count: " << cpu2->instructioncount << std::endl;
+    std::cout << "CPU 1 Cycles: " << cpu1->cycles << std::endl;
+    std::cout << "CPU 2 Cycles: " << cpu2->cycles << std::endl;
+    std::cout << "CPU 1 CPI " << (float)cpu1->cycles / cpu1->instructioncount << std::endl;
+    std::cout << "CPU 2 CPI " << (float)cpu2->cycles / cpu2->instructioncount << std::endl;
     memory->printRange("Array A: ", uint32_t(0x0400), uint32_t(0x0400 + 255*4));
     memory->printRange("Array B: ", uint32_t(0x0800), uint32_t(0x0800 + 255*4));
     memory->printRange("Array C: ", uint32_t(0x0C00), uint32_t(0x0C00 + 255*4));

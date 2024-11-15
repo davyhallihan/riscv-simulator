@@ -8,7 +8,7 @@ struct POLL {
     std::string dest;
     bool rw; //true = read, false = write
     uint32_t address;
-    uint32_t data;
+    int32_t data;
     uint32_t result;
     bool done;
 };

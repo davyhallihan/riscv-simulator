@@ -27,8 +27,8 @@ class RAM {
     private:
         void writeInstructionsToRAM(std::vector<int> instructions, int start);
         void initializeRandomRAM();
-        uint32_t readFromRam(uint32_t address);
-        void writeToRam(uint32_t address, uint32_t data);
+        int32_t readFromRam(uint32_t address);
+        void writeToRam(uint32_t address, int32_t data);
         
 };
 

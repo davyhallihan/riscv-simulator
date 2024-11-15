@@ -1,12 +1,16 @@
 #include <cmath>
 #include <cstdint>
 #include <utility>
+#include <cstring>
 #include "../formats/instruction.h"
 #include "decoder.h"
 #include "ram.h"
 
 class CPU {
     public:
+        uint32_t cycles;
+        uint32_t instructioncount;
+
         int IN_PORT;
         int rf[32]; 
         float FPrf[32];
@@ -130,7 +134,7 @@ class CPU {
             
             //if(cpuTick) { std::cout << "CPU TICK!" << std::endl;}
             if(cpuTick) { 
-                print_registers();
+                // print_registers();
                 // std::cout << "PC " << PC << std::endl;
                 // if(fetch) { print_instr(*fetch, "FETCH"); }
                 // if(decode) { print_instr(*decode, "DECODE"); }
@@ -369,7 +373,7 @@ class CPU {
                 } else if(op == "fsw") {
                     instr->stallNum += 40;
                     instr->store = true;
-                    instr->result = uint32_t(FPrf[instr->rs2]);
+                    instr->result = int32_t(FPrf[instr->rs2]);
                     instr->rd = uint32_t(rf[instr->rs1] + instr->immediate);
                 } else if(op == "flw") {
                     instr->stallNum += 40;
@@ -377,7 +381,7 @@ class CPU {
                     instr->load_address = rf[instr->rs1] + instr->immediate;
                 } else if(op == "fadd.s") {
                     instr->stallNum += 40;
-                    instr->result = FPrf[instr->rs1] + FPrf[instr->rs2];
+                    instr->result = int32_t(FPrf[instr->rs1] + FPrf[instr->rs2]);
                     FPrf[instr->rd] = instr->result;
                 } else if(op == "fsub.s") {
                     instr->stallNum += 40;
@@ -400,10 +404,10 @@ class CPU {
                 if(p_load != nullptr && loading) { 
                     if(p_load->done) { 
                         instr->loading = false; 
-                        if(instr->instr == "flw") {
+                        if(instr->instr == "flw") {                            
                             FPrf[instr->rd] = float(p_load->result);
                         } else {
-                            rf[instr->rd] = float(p_load->result);
+                            rf[instr->rd] = p_load->result;
                         } 
                         p_load = nullptr; 
                         loading = false; 
@@ -436,8 +440,6 @@ class CPU {
         Instruction *decode;
         Instruction *execute;
         Instruction *store;
-        uint32_t cycles;
-        uint32_t instructioncount;
         bool storing;
         bool cpuTick;
 

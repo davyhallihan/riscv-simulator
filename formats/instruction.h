@@ -15,7 +15,7 @@ struct Instruction {
     uint32_t instruction;
     uint32_t stall;
     uint32_t stallNum;
-    uint32_t result;
+    int32_t result;
     std::string instr;
 
     uint32_t opcode;
