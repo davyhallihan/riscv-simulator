@@ -16,6 +16,8 @@ class CPU {
         float FPrf[32];
         int PC;
 
+        bool printd;
+
         bool fetching = false;
         bool loading = false;
 
@@ -134,28 +136,23 @@ class CPU {
             
             //if(cpuTick) { std::cout << "CPU TICK!" << std::endl;}
             if(cpuTick) { 
-                // print_registers();
-                // std::cout << "PC " << PC << std::endl;
-                // if(fetch) { print_instr(*fetch, "FETCH"); }
-                // if(decode) { print_instr(*decode, "DECODE"); }
-                // if(execute) { print_instr(*execute, "EXECUTE"); }
-                // if(store) { print_instr(*store, "STORE"); }
+                print_registers();
+                std::cout << "CPU" << IN_PORT << " PC at " << PC << std::endl;
+                if(fetch) { print_instr(*fetch, "FETCH"); }
+                if(decode) { print_instr(*decode, "DECODE"); }
+                if(execute) { print_instr(*execute, "EXECUTE"); }
+                if(store) { print_instr(*store, "STORE"); }
+                std::cout << std::endl;
                 // std::cout << "POLLING " << POLL_MEM << " " << memory->PORT_MEM.first << " " << memory->PORT_MEM.second << std::endl;
                 //std::cout << std::endl << "PC at : " << PC << " Press Enter to continue...";
                 //std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             } 
 
-            // for (int i = 9; i < 32; i++) {
-            //     if (rf[i] != 0) {
-            //         done = true;
-            //     }
-            // }
-
             return done;
         }
 
         void print_instr(Instruction instr, std::string stage) {
-            std::cout << "CPU " << IN_PORT << " ";
+            std::cout << "CPU" << IN_PORT << " ";
             if(instr.instr != "") { 
                 std::cout << stage << " " << instr.instr << std::endl;
                 return;
@@ -422,13 +419,13 @@ class CPU {
         }
 
         void print_registers() {
-            std::cout << "CPU " << IN_PORT << " REGISTERS at PC " << PC << ": ";
+            std::cout << "CPU" << IN_PORT << " REGISTERS ";
             for(int i = 0; i < 32; i++) {
                 std::cout << rf[i] << " ";
             }
             std::cout << std::endl;
 
-            std::cout << "CPU " << IN_PORT << " F REGISTERS at PC " << PC << ": ";
+            std::cout << "CPU" << IN_PORT << " F REGISTERS ";
             for(int i = 0; i < 32; i++) {
                 std::cout << FPrf[i] << " ";
             }

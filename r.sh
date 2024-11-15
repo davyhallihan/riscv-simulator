@@ -1,1 +1,1 @@
-./riscv-simulator asm-files/vadd.s asm-files/vsub.s
+./riscv-simulator asm-files/fvadd.s asm-files/fvsub.s

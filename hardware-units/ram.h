@@ -18,6 +18,7 @@ class RAM {
         uint32_t INST2STALL;
         int totalTicks;
         MEMBUS* bus;
+        bool printd;
 
         RAM();
         void initialize(std::vector<int> instructions1, std::vector<int> instructions2, MEMBUS* BUS);

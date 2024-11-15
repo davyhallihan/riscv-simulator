@@ -16,6 +16,8 @@ CPU *cpu1 = new CPU();
 CPU *cpu2 = new CPU();
 MEMBUS *bus = new MEMBUS();
 
+bool printDiagnostics = true;
+
 
 
 std::vector<int> instructionsFromFile(const std::string& filename) {
@@ -61,18 +63,21 @@ int main(int argc, char* argv[]) {
     cpu1->initialize(bus, 0);
     cpu2->initialize(bus, 1);
 
-    //UNIT TEST TO VERIFY INITIALIZATION WORKING PROPERLY
-    // for(int i = 0; i < 4*21; i += 4) {
-    //     uint32_t value = *reinterpret_cast<uint32_t*>(&memory->mem[i]);
-    //     std::cout << std::bitset<32>(value) << " vs " << std::bitset<32>(instructions[i/4]) << std::endl;
-    // }
+    memory->printd = printDiagnostics;
+    cpu1->printd = printDiagnostics;
+    cpu2->printd = printDiagnostics;
+
     bool done1 = false;
     bool done2 = false;
     while(!done1 || !done2) {
+        if(printDiagnostics && !(cpuclock->getClock() % 10)) { std::cout << "#################################################################" << std::endl; }
+        //if(printDiagnostics && !(cpuclock->getClock() % 10)) { std::cout << "Overall Simulation - Simtick #" << cpuclock->getClock() << std::endl; }
+        if(printDiagnostics && !(cpuclock->getClock() % 10)) { std::cout << "Overall Simulation - CPU Cycle #" << int(cpuclock->getClock() / 10) << std::endl; }
         if(!done1) {
             done1 = cpu1->cycle();
             cpu1->updateCycles(cpuclock->getClock());
         }
+        
         if(!done2){
             done2 = cpu2->cycle();
             cpu2->updateCycles(cpuclock->getClock());
@@ -80,22 +85,25 @@ int main(int argc, char* argv[]) {
         bus->cycle();
         cpuclock->increment();
         memory->cycle();
-        if(!(cpuclock->getClock() % 100)) {
-            //std::cout << cpu1->PC << " " << cpu2->PC << std::endl;
-        }
+        if(printDiagnostics && !(cpuclock->getClock() % 10)) { std::cout << "#################################################################" << std::endl << std::endl; }
     }
 
     std::cout << "Simulation Complete" << std::endl;
-    std::cout << "CPU 1 Instruction Count: " << cpu1->instructioncount << std::endl;
-    std::cout << "CPU 2 Instruction Count: " << cpu2->instructioncount << std::endl;
-    std::cout << "CPU 1 Cycles: " << cpu1->cycles << std::endl;
-    std::cout << "CPU 2 Cycles: " << cpu2->cycles << std::endl;
-    std::cout << "CPU 1 CPI " << (float)cpu1->cycles / cpu1->instructioncount << std::endl;
-    std::cout << "CPU 2 CPI " << (float)cpu2->cycles / cpu2->instructioncount << std::endl;
+    std::cout << "CPU0 Instruction Count: " << cpu1->instructioncount << std::endl;
+    std::cout << "CPU1 Instruction Count: " << cpu2->instructioncount << std::endl;
+    std::cout << "CPU0 Cycles: " << cpu1->cycles << std::endl;
+    std::cout << "CPU1 Cycles: " << cpu2->cycles << std::endl;
+    std::cout << "CPU0 CPI " << (float)cpu1->cycles / cpu1->instructioncount << std::endl;
+    std::cout << "CPU1 CPI " << (float)cpu2->cycles / cpu2->instructioncount << std::endl;
+    std::cout << std::endl;
     memory->printRange("Array A: ", uint32_t(0x0400), uint32_t(0x0400 + 255*4));
     memory->printRange("Array B: ", uint32_t(0x0800), uint32_t(0x0800 + 255*4));
     memory->printRange("Array C: ", uint32_t(0x0C00), uint32_t(0x0C00 + 255*4));
     memory->printRange("Array D: ", uint32_t(0x1000), uint32_t(0x1000 + 255*4));
+
+    std::cout << std::endl << "Validating arrays C and D with vector addition: " << std::endl;
+
+    
     
 
     return 0;
