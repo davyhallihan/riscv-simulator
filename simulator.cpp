@@ -88,14 +88,11 @@ int main(int argc, char* argv[]) {
         if(printDiagnostics && !(cpuclock->getClock() % 10)) { std::cout << "#################################################################" << std::endl << std::endl; }
     }
 
+
+    if(printDiagnostics) { std::cout << "#################################################################" << std::endl << std::endl; }
+
     std::cout << "Simulation Complete" << std::endl;
-    std::cout << "CPU0 Instruction Count: " << cpu1->instructioncount << std::endl;
-    std::cout << "CPU1 Instruction Count: " << cpu2->instructioncount << std::endl;
-    std::cout << "CPU0 Cycles: " << cpu1->cycles << std::endl;
-    std::cout << "CPU1 Cycles: " << cpu2->cycles << std::endl;
-    std::cout << "CPU0 CPI " << (float)cpu1->cycles / cpu1->instructioncount << std::endl;
-    std::cout << "CPU1 CPI " << (float)cpu2->cycles / cpu2->instructioncount << std::endl;
-    std::cout << std::endl;
+    std::cout << "Result Arrays: " << std::endl;
     memory->printRange("Array A: ", uint32_t(0x0400), uint32_t(0x0400 + 255*4));
     memory->printRange("Array B: ", uint32_t(0x0800), uint32_t(0x0800 + 255*4));
     memory->printRange("Array C: ", uint32_t(0x0C00), uint32_t(0x0C00 + 255*4));
@@ -103,8 +100,51 @@ int main(int argc, char* argv[]) {
 
     std::cout << std::endl << "Validating arrays C and D with vector addition: " << std::endl;
 
-    
-    
+    std::vector<float> A = memory->accessRange(0x0400, 0x0400 + 255*4);
+    std::vector<float> B = memory->accessRange(0x0800, 0x0800 + 255*4);
+    std::vector<float> C = memory->accessRange(0x0C00, 0x0C00 + 255*4);
+    std::vector<float> D = memory->accessRange(0x1000, 0x1000 + 255*4);
+    std::vector<float> C_check(255);
+    std::vector<float> D_check(255);
+
+    for(int i = 0; i < 255; i++) {
+        C_check[i] = A[i] + B[i];
+        D_check[i] = A[i] - B[i];
+
+        if(A[i] + B[i] != C[i]) {
+            std::cout << "Array C is invalid" << std::endl;
+            break;
+        }
+
+        if(A[i] - B[i] != D[i]) {
+            std::cout << "Array D is invalid" << std::endl;
+            break;
+        }
+
+        if(i == 254) {
+            std::cout << "Arrays C and D are valid" << std::endl;
+        }
+    }
+
+    std::cout << "Vector Addition Array C: ";
+    for(float i : C_check) {
+        std::cout << i << " ";
+    }
+
+    std::cout << std::endl << "Vector Subtraction Array D: ";
+    for(float i : D_check) {
+        std::cout << i << " ";
+    }
+
+    std::cout << std::endl << std::endl;
+
+    std::cout << "CPU0 Instruction Count: " << cpu1->instructioncount << std::endl;
+    std::cout << "CPU1 Instruction Count: " << cpu2->instructioncount << std::endl;
+    std::cout << "CPU0 Cycles: " << cpu1->cycles << std::endl;
+    std::cout << "CPU1 Cycles: " << cpu2->cycles << std::endl;
+    std::cout << "CPU0 CPI " << (float)cpu1->cycles / cpu1->instructioncount << std::endl;
+    std::cout << "CPU1 CPI " << (float)cpu2->cycles / cpu2->instructioncount << std::endl;
+    std::cout << std::endl;
 
     return 0;
 }

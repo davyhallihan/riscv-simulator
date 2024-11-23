@@ -4,7 +4,7 @@
 
 class MEMBUS {
     public:
-        PORT *CPU[2];
+        PORT* CPU[2];
         PORT* INST1;
         PORT* INST2;
         PORT* MEM;

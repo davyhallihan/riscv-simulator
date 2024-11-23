@@ -142,7 +142,7 @@ class CPU {
                 if(decode) { print_instr(*decode, "DECODE"); }
                 if(execute) { print_instr(*execute, "EXECUTE"); }
                 if(store) { print_instr(*store, "STORE"); }
-                std::cout << std::endl;
+                if(IN_PORT == 0) { std::cout << std::endl; }
                 // std::cout << "POLLING " << POLL_MEM << " " << memory->PORT_MEM.first << " " << memory->PORT_MEM.second << std::endl;
                 //std::cout << std::endl << "PC at : " << PC << " Press Enter to continue...";
                 //std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');

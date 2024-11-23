@@ -24,6 +24,7 @@ class RAM {
         void initialize(std::vector<int> instructions1, std::vector<int> instructions2, MEMBUS* BUS);
         void cycle();
         void printRange(std::string preamble, uint32_t start, uint32_t end);
+        std::vector<float> accessRange(uint32_t start, uint32_t end);
 
     private:
         void writeInstructionsToRAM(std::vector<int> instructions, int start);

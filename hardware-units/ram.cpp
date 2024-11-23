@@ -30,6 +30,16 @@ void RAM::printRange(std::string preamble, uint32_t start, uint32_t end) {
     std::cout << std::endl;
 }
 
+std::vector<float> RAM::accessRange(uint32_t start, uint32_t end) {
+    std::vector<float> res(256);
+    int j = 0;
+    for (uint32_t i = start; i < end; i += 4) {
+        res[j] = float(readFromRam(i));
+        j++;      
+    }
+    return res;
+}
+
 void RAM::initialize(std::vector<int> instructions1, std::vector<int> instructions2, MEMBUS* commline) {
     writeInstructionsToRAM(instructions1, 0x000);
     writeInstructionsToRAM(instructions2, 0x100);
@@ -107,7 +117,7 @@ void RAM::writeInstructionsToRAM(std::vector<int> instructions, int start) {
 
 void RAM::initializeRandomRAM() {
     for (uint32_t address = 0x400; address <= 0xBFF; address += 4) {
-        writeToRam(address, (rand() % 255) + 1);
+        writeToRam(address, (rand() % 64000) + 1);
     }
 }
 
